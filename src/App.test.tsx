@@ -23,7 +23,7 @@ describe('la app', () => {
     render(<App />)
 
     await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
-    await usuario.type(screen.getByLabelText('Nombre'), 'Carmen')
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
     await usuario.click(screen.getByRole('button', { name: 'Mujer' }))
     await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
 
@@ -50,7 +50,7 @@ describe('la app', () => {
     render(<App />)
 
     await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
-    await usuario.type(screen.getByLabelText('Nombre'), 'Carmen')
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
     await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
     await usuario.click(await screen.findByRole('link', { name: /Teléfonos de centros médicos/ }))
 
@@ -65,5 +65,38 @@ describe('la app', () => {
 
     expect(await screen.findByRole('link', { name: 'Llamar a Dra. Álvarez' })).toHaveAttribute('href', 'tel:612345678')
     expect(screen.getByText('612 345 678')).toBeInTheDocument()
+  })
+
+  it('avisa al apuntar un medicamento de la familia de una alergia', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    // 1. Apunta la alergia a la penicilina.
+    await usuario.click(await screen.findByRole('link', { name: /Alergias e intolerancias/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Añadir alergia/ }))
+    await usuario.type(screen.getByLabelText(/^Medicamento/), 'Penicilina')
+    expect(screen.getByText(/Reconocido/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Grave' }))
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(await screen.findByText('Penicilina')).toBeInTheDocument()
+
+    // 2. Al escribir Augmentine en Medicación, avisa antes de guardar.
+    await usuario.click(screen.getByRole('button', { name: /Volver al inicio/ }))
+    await usuario.click(await screen.findByRole('link', { name: /Medicación/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Añadir medicamento/ }))
+    await usuario.type(screen.getByLabelText(/^Nombre del medicamento/), 'Augmentine 875')
+    expect(screen.getByRole('alert')).toHaveTextContent(/misma familia/)
+    expect(screen.getByText(/Antibiótico \(penicilina\)/)).toBeInTheDocument()
+
+    // 3. Al guardar, pide confirmación; si se confirma, queda marcado en rojo.
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('button', { name: /me lo ha mandado el médico/ }))
+    expect(await screen.findByText(/Revisa con tu médico/)).toBeInTheDocument()
+    // Sale en el aviso de arriba y en su tarjeta.
+    expect(screen.getAllByText('Augmentine 875')).toHaveLength(2)
   })
 })

@@ -39,7 +39,7 @@ describe('perfiles', () => {
     const madre = await crearPerfil({ nombre: 'Carmen', color: '#1f6f5c' })
     const hijo = await crearPerfil({ nombre: 'David', color: '#2b5797' })
     await db.citas.add(registro(madre.id, { fecha: '2026-11-02' }))
-    await db.medicamentos.add(registro(madre.id, { activo: 1 }))
+    await db.medicamentos.add({ ...registro(madre.id), nombre: 'Sintrom', momentos: [], activo: 1 })
     await db.citas.add(registro(hijo.id, { fecha: '2026-11-03' }))
 
     await borrarPerfil(madre.id)

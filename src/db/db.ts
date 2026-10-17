@@ -2,21 +2,21 @@
 // del móvil, a través de Dexie (una librería que hace IndexedDB más fácil de usar).
 // Todo se queda en el móvil: nada se envía a ningún sitio.
 import Dexie, { type Table } from 'dexie'
-import type { Adjunto, Contacto, Perfil, RegistroBase } from './tipos'
+import type { Adjunto, Alergia, Contacto, Medicamento, Perfil, RegistroBase } from './tipos'
 
 /** Registro genérico mientras cada sección no tenga su forma definitiva. */
 export type RegistroLibre = RegistroBase & Record<string, unknown>
 
 export class BaseDeDatos extends Dexie {
   perfiles!: Table<Perfil, string>
-  medicamentos!: Table<RegistroLibre, string>
+  medicamentos!: Table<Medicamento, string>
   citas!: Table<RegistroLibre, string>
   historial!: Table<RegistroLibre, string>
   analiticas!: Table<RegistroLibre, string>
   revisiones!: Table<RegistroLibre, string>
   dental!: Table<RegistroLibre, string>
   constantes!: Table<RegistroLibre, string>
-  alergias!: Table<RegistroLibre, string>
+  alergias!: Table<Alergia, string>
   adjuntos!: Table<Adjunto, string>
   /** Ficha de emergencia y datos sanitarios: una por persona. */
   fichas!: Table<RegistroLibre, string>

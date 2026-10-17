@@ -40,7 +40,39 @@ export interface Adjunto extends RegistroBase {
   analisis: 'pendiente' | 'hecho' | 'no'
 }
 
-export type TipoContacto = 'centro-salud' | 'medico' | 'hospital' | 'farmacia' | 'otro'
+export type Gravedad = 'leve' | 'moderada' | 'grave' | 'desconocida'
+
+/** Una alergia o intolerancia a un medicamento, un alimento u otra cosa. */
+export interface Alergia extends RegistroBase {
+  tipo: 'medicamento' | 'alimento' | 'otro'
+  clase: 'alergia' | 'intolerancia'
+  nombre: string
+  gravedad: Gravedad
+  /** Qué le pasó: "ronchas", "se me hinchó la cara"… */
+  reaccion?: string
+  desde?: FechaISO
+}
+
+export type Momento = 'desayuno' | 'comida' | 'cena' | 'acostarse'
+
+/** Un medicamento que se toma ahora (activo = 1) o que se tomó antes (activo = 0). */
+export interface Medicamento extends RegistroBase {
+  nombre: string
+  /** Cuánto se toma: "1 comprimido de 500 mg". */
+  dosis?: string
+  momentos: Momento[]
+  /** Si no encaja en los momentos: "cada 8 horas", "los lunes"… */
+  otroHorario?: string
+  paraQue?: string
+  familia?: string
+  fechaInicio?: FechaISO
+  fechaFin?: FechaISO
+  /** 1 = lo toma ahora; 0 = lo tomó antes. (Número y no sí/no porque la base de datos busca por él.) */
+  activo: 0 | 1
+  notas?: string
+}
+
+export type TipoContacto ='centro-salud' | 'medico' | 'hospital' | 'farmacia' | 'otro'
 
 /** Un teléfono de un centro médico, médico, hospital… para llamar con un toque. */
 export interface Contacto extends RegistroBase {

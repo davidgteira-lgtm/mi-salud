@@ -266,6 +266,51 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
   cursor: pointer;
 }
 
+/* ---- Etiquetas, pestañas y sugerencias ---- */
+.texto-suave { color: var(--texto-suave); }
+.etiquetas { display: flex; flex-wrap: wrap; gap: 8px; }
+.etiqueta {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--principal-claro);
+  color: var(--principal-oscuro);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.etiqueta-grave { background: var(--peligro); color: #fff; }
+.etiqueta-moderada { background: #f6d2b8; color: #6b2f05; }
+.etiqueta-leve { background: var(--aviso-claro); color: #4d3300; }
+.etiqueta-desconocida { background: #e6e9ee; color: var(--texto-suave); }
+.etiqueta-momento { background: #eef2fb; color: #2f3f7a; font-size: 0.95rem; }
+
+.tarjeta-alerta { border: 3px solid var(--peligro); }
+
+.pestanas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  border-radius: var(--radio);
+  background: var(--principal-claro);
+}
+.pestanas button {
+  min-height: 60px;
+  padding: 8px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--principal-oscuro);
+  cursor: pointer;
+}
+.pestanas button[aria-selected='true'] { background: var(--superficie); box-shadow: var(--sombra); }
+
+.sugerencias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -6px; }
+.sugerencias .opcion { min-height: 52px; padding: 0 16px; }
+
 .dialogo-fondo {
   position: fixed;
   inset: 0;
