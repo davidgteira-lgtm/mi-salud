@@ -2,6 +2,11 @@
 // fake-indexeddb: una base de datos "de mentira" en memoria, para probar sin navegador.
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach } from 'vitest'
+
+// Después de cada test se vacía la pantalla, para que no se mezclen unos con otros.
+afterEach(() => cleanup())
 import { Blob as BlobDeNode, File as FileDeNode } from 'node:buffer'
 
 // El "navegador de mentira" (jsdom) tiene su propio tipo de archivo (Blob) que la

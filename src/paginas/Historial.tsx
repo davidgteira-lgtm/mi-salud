@@ -6,7 +6,9 @@ import { Selector } from '../componentes/Selector'
 import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { ESPECIALIDADES } from '../db/citas'
 import { agruparPorAno, borrarHistorial, guardarHistorial, listarHistorial, PRUEBAS, revisarHistorial, TIPOS_HISTORIAL } from '../db/historial'
-import type { EntradaHistorial, TipoHistorial } from '../db/tipos'
+import { EtiquetaRegla } from '../componentes/EtiquetaRegla'
+import { useCiclosVisibles } from '../componentes/useCiclosVisibles'
+import type { Ciclo, EntradaHistorial, TipoHistorial } from '../db/tipos'
 import { fechaLarga, hoyISO } from '../utils/fechas'
 
 /** Historial: todo lo médico que ha pasado, de lo más reciente a lo más antiguo. */
@@ -14,6 +16,7 @@ export function Historial({ perfilId }: { perfilId: string }) {
   const [tipo, setTipo] = useState<TipoHistorial | ''>('')
   const [busqueda, setBusqueda] = useState('')
   const [editando, setEditando] = useState<EntradaHistorial | null>()
+  const ciclos = useCiclosVisibles(perfilId)
   const lista = useLiveQuery(() => listarHistorial(perfilId, { tipo: tipo || undefined, busqueda }), [perfilId, tipo, busqueda])
   // Tipos que de verdad hay apuntados: solo esos salen como filtro.
   const tiposPresentes = useLiveQuery(
@@ -70,7 +73,7 @@ export function Historial({ perfilId }: { perfilId: string }) {
         <section key={ano} className="pila">
           <h2 className="titulo-ano">{ano}</h2>
           {entradas.map((h) => (
-            <TarjetaHistorial key={h.id} entrada={h} onCambiar={() => setEditando(h)} />
+            <TarjetaHistorial key={h.id} entrada={h} ciclos={ciclos} onCambiar={() => setEditando(h)} />
           ))}
         </section>
       ))}
@@ -78,7 +81,7 @@ export function Historial({ perfilId }: { perfilId: string }) {
   )
 }
 
-function TarjetaHistorial({ entrada: h, onCambiar }: { entrada: EntradaHistorial; onCambiar: () => void }) {
+function TarjetaHistorial({ entrada: h, ciclos, onCambiar }: { entrada: EntradaHistorial; ciclos: Ciclo[]; onCambiar: () => void }) {
   const tipo = TIPOS_HISTORIAL.find((t) => t.valor === h.tipo)
   return (
     <article className="tarjeta pila" style={{ gap: 6 }}>
@@ -87,6 +90,7 @@ function TarjetaHistorial({ entrada: h, onCambiar }: { entrada: EntradaHistorial
           {tipo?.icono} {h.prueba ?? tipo?.texto}
         </span>
         {h.cronica && <span className="etiqueta etiqueta-moderada">Crónica</span>}
+        <EtiquetaRegla fecha={h.fecha} ciclos={ciclos} />
       </div>
       <strong style={{ fontSize: '1.25rem' }}>{h.titulo}</strong>
       <span className="texto-suave">{fechaLarga(h.fecha)}</span>

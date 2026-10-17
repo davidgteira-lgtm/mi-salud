@@ -13,6 +13,8 @@ export interface Perfil {
   nombre: string
   fechaNacimiento?: FechaISO
   sexo?: Sexo
+  /** Si quiere llevar el control de la regla (si no se ha dicho, sí para las mujeres). */
+  apuntarRegla?: boolean
   /** Foto de la cara, guardada dentro del móvil. */
   foto?: Blob
   /** Color con el que se distingue a la persona en la app. */
@@ -112,6 +114,57 @@ export interface EntradaHistorial extends RegistroBase {
   cronica?: boolean
 }
 
+export type TipoConstante = 'tension' | 'pulso' | 'peso' | 'glucosa' | 'saturacion' | 'temperatura'
+
+/** Una medida de constantes vitales: tensión, pulso, peso… */
+export interface Medida extends RegistroBase {
+  tipo: TipoConstante
+  fecha: FechaISO
+  hora?: string
+  /** El número principal (en la tensión, la alta). */
+  valor: number
+  /** Solo en la tensión: la baja. */
+  valor2?: number
+  /** En la tensión se puede apuntar también el pulso que da el aparato. */
+  pulso?: number
+  /** Solo en el azúcar. */
+  momento?: 'ayunas' | 'despues-comer' | 'otro'
+  notas?: string
+}
+
+/** Un resultado de un análisis: "Glucosa 91 mg/dL (74 - 100)". */
+export interface ResultadoAnalisis {
+  /** La prueba de la lista de la app, si se ha reconocido (para juntar la evolución). */
+  clave?: string
+  /** Como venía en el informe. */
+  nombre: string
+  valor: number
+  /** "< 1.73": el valor real es menor. ">90": mayor. */
+  comparador?: '<' | '>'
+  unidad?: string
+  /** Referencia del propio informe (es la que vale). */
+  refMin?: number
+  refMax?: number
+}
+
+/** Un análisis (de sangre, de orina…) con todos sus resultados. */
+export interface Analitica extends RegistroBase {
+  fecha: FechaISO
+  centro?: string
+  notas?: string
+  resultados: ResultadoAnalisis[]
+}
+
+/** Una regla (menstruación): cuándo empezó, cuándo acabó y cómo fue. */
+export interface Ciclo extends RegistroBase {
+  inicio: FechaISO
+  /** Puede no saberse todavía (si está en curso). */
+  fin?: FechaISO
+  intensidad?: 'poca' | 'normal' | 'mucha'
+  sintomas: string[]
+  notas?: string
+}
+
 export type TipoContacto = 'centro-salud' | 'medico' | 'hospital' | 'farmacia' | 'otro'
 
 /** Un teléfono de un centro médico, médico, hospital… para llamar con un toque. */
@@ -136,6 +189,7 @@ export const TABLAS_DE_PERFIL = [
   'adjuntos',
   'fichas',
   'telefonos',
+  'ciclos',
 ] as const
 
 export type TablaDePerfil = (typeof TABLAS_DE_PERFIL)[number]

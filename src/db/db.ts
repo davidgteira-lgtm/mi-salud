@@ -2,7 +2,7 @@
 // del móvil, a través de Dexie (una librería que hace IndexedDB más fácil de usar).
 // Todo se queda en el móvil: nada se envía a ningún sitio.
 import Dexie, { type Table } from 'dexie'
-import type { Adjunto, Alergia, Cita, Contacto, EntradaHistorial, Medicamento, Perfil, RegistroBase } from './tipos'
+import type { Adjunto, Alergia, Analitica, Cita, Ciclo, Contacto, EntradaHistorial, Medicamento, Medida, Perfil, RegistroBase } from './tipos'
 
 /** Registro genérico mientras cada sección no tenga su forma definitiva. */
 export type RegistroLibre = RegistroBase & Record<string, unknown>
@@ -12,15 +12,16 @@ export class BaseDeDatos extends Dexie {
   medicamentos!: Table<Medicamento, string>
   citas!: Table<Cita, string>
   historial!: Table<EntradaHistorial, string>
-  analiticas!: Table<RegistroLibre, string>
+  analiticas!: Table<Analitica, string>
   revisiones!: Table<RegistroLibre, string>
   dental!: Table<RegistroLibre, string>
-  constantes!: Table<RegistroLibre, string>
+  constantes!: Table<Medida, string>
   alergias!: Table<Alergia, string>
   adjuntos!: Table<Adjunto, string>
   /** Ficha de emergencia y datos sanitarios: una por persona. */
   fichas!: Table<RegistroLibre, string>
   telefonos!: Table<Contacto, string>
+  ciclos!: Table<Ciclo, string>
 
   constructor(nombre = 'mi-salud') {
     super(nombre)
@@ -42,6 +43,10 @@ export class BaseDeDatos extends Dexie {
     // Versión 2: teléfonos de centros médicos. Los datos de la versión 1 se conservan.
     this.version(2).stores({
       telefonos: 'id, perfilId',
+    })
+    // Versión 3: ciclos de la regla.
+    this.version(3).stores({
+      ciclos: 'id, perfilId, [perfilId+inicio]',
     })
   }
 }

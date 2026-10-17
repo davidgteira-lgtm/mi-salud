@@ -4,7 +4,9 @@ import { FondoSeccion } from '../componentes/Banner'
 import { usePerfilActivo } from '../perfilActivo'
 import { buscarSeccion } from '../secciones'
 import { Alergias } from './Alergias'
+import { Analisis } from './Analisis'
 import { Citas } from './Citas'
+import { Constantes } from './Constantes'
 import { Historial } from './Historial'
 import { Medicacion } from './Medicacion'
 import { Telefonos } from './Telefonos'
@@ -12,7 +14,9 @@ import { Telefonos } from './Telefonos'
 /** El contenido de cada sección que ya está hecha. Las demás se ven "en construcción". */
 const CONTENIDO: Record<string, ComponentType<{ perfilId: string }>> = {
   alergias: Alergias,
+  analisis: Analisis,
   citas: Citas,
+  constantes: Constantes,
   historial: Historial,
   medicacion: Medicacion,
   telefonos: Telefonos,

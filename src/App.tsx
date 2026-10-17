@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router'
 import { AvisoActualizacion } from './componentes/AvisoActualizacion'
+import { LectorVoz } from './componentes/LectorVoz'
 import { Ajustes } from './paginas/Ajustes'
 import { ElegirPerfil } from './paginas/ElegirPerfil'
 import { FormularioPerfil } from './paginas/FormularioPerfil'
@@ -31,6 +32,8 @@ export default function App() {
           <Route path="/ajustes/:apartado?" element={<Ajustes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        {/* El botón de leer en voz alta está en todas las pantallas. */}
+        <LectorVoz />
       </HashRouter>
       <AvisoActualizacion />
     </ProveedorPerfil>

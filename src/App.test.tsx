@@ -117,6 +117,114 @@ describe('la app', () => {
     expect((await db.perfiles.toArray())[0].foto).toBeDefined()
   })
 
+  it('apunta una tensión y dice si está bien', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Constantes vitales/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Apuntar tensión/ }))
+    await usuario.type(screen.getByLabelText('Alta'), '150')
+    await usuario.type(screen.getByLabelText('Baja'), '95')
+    expect(screen.getByText(/Entendido/)).toHaveTextContent('Alta 150 · Baja 95')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByRole('button', { name: /Tensión.*Alta 150.*Baja 95.*Alta/ })).toBeInTheDocument()
+  })
+
+  it('la regla sale solo si toca, y se apunta desde Constantes vitales', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Antonio')
+    await usuario.click(screen.getByRole('button', { name: 'Hombre' }))
+    expect(screen.queryByText('¿Quieres apuntar la regla?')).not.toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(await screen.findByRole('link', { name: /Constantes vitales/ }))
+    await screen.findByRole('button', { name: /Apuntar tensión/ })
+    expect(screen.queryByRole('button', { name: /Regla/ })).not.toBeInTheDocument()
+    expect(await db.perfiles.count()).toBe(1)
+
+    // Una mujer: viene marcada por defecto.
+    await db.perfiles.update((await db.perfiles.toArray())[0].id, { sexo: 'mujer' })
+    await usuario.click(await screen.findByRole('button', { name: /Regla/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Apuntar regla/ }))
+    fireEvent.change(screen.getByLabelText('¿Qué día te vino?'), { target: { value: '2026-09-04' } })
+    fireEvent.change(screen.getByLabelText(/¿Qué día se te fue\?/), { target: { value: '2026-09-08' } })
+    await usuario.click(screen.getByRole('button', { name: 'Dolor' }))
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('Duró 5 días')).toBeInTheDocument()
+    expect((await db.ciclos.toArray())[0]).toMatchObject({ inicio: '2026-09-04', fin: '2026-09-08', sintomas: ['Dolor'] })
+  })
+
+  it('pega el texto de un informe y guarda los resultados', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Análisis/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Añadir análisis/ }))
+    await usuario.click(screen.getByRole('button', { name: /Pegar el texto del informe/ }))
+    // Informe inventado.
+    fireEvent.change(screen.getByLabelText(/Pega aquí el texto/), {
+      target: { value: 'Fecha: 05/03/2026\nGlucosa 104 mg/dl (74 - 100)\nHDL Colesterol 55 mg/dl (Sup. 40)\nCEA < 1.50 ng/ml (Inf. 5)' },
+    })
+    await usuario.click(screen.getByRole('button', { name: 'Leer resultados' }))
+    expect(screen.getByRole('status')).toHaveTextContent('He leído 3 resultados')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('Análisis del 5 de marzo de 2026')).toBeInTheDocument()
+    expect(screen.getByText(/1 fuera de lo normal/)).toBeInTheDocument()
+    const analitica = (await db.analiticas.toArray())[0]
+    expect(analitica.resultados.map((r) => [r.clave, r.valor, r.comparador])).toEqual([
+      ['glucosa', 104, undefined],
+      ['hdl', 55, undefined],
+      ['cea', 1.5, '<'],
+    ])
+  })
+
+  it('el botón de leer en voz alta está siempre y lee la pantalla', async () => {
+    // Voz del móvil simulada: guardamos lo que se le manda leer.
+    const leido: string[] = []
+    class Frase {
+      text: string
+      lang = ''
+      rate = 1
+      voice: unknown = null
+      onstart?: () => void
+      onend?: () => void
+      onerror?: () => void
+      constructor(t: string) {
+        this.text = t
+      }
+    }
+    vi.stubGlobal('SpeechSynthesisUtterance', Frase)
+    vi.stubGlobal('speechSynthesis', { speak: (f: Frase) => leido.push(f.text), cancel: () => {}, getVoices: () => [] })
+
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Leer en voz alta' }))
+
+    expect(leido.join(' ')).toContain('Bienvenido a Mi Salud')
+    // Ya activada, el botón cambia y se puede quitar.
+    expect(screen.getByRole('button', { name: 'Quitar la lectura en voz alta' })).toBeInTheDocument()
+    expect(localStorage.getItem('mi-salud:lectura-voz')).toBe('si')
+
+    // Al tocar un texto, se lee ese trozo.
+    leido.length = 0
+    await usuario.click(screen.getByText(/Todo se queda en este móvil/))
+    expect(leido.join(' ')).toContain('Todo se queda en este móvil')
+
+    await usuario.click(screen.getByRole('button', { name: 'Quitar la lectura en voz alta' }))
+    expect(screen.getByRole('button', { name: 'Leer en voz alta' })).toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
   it('apunta una cita para mañana y el inicio avisa', async () => {
     const usuario = userEvent.setup()
     render(<App />)

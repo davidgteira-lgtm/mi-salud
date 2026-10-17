@@ -6,7 +6,9 @@ import { Selector } from '../componentes/Selector'
 import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { borrarCita, ESPECIALIDADES, especialidadesPasadas, guardarCita, listarPasadas, listarProximas, revisarCita } from '../db/citas'
 import { listarContactos } from '../db/telefonos'
-import type { Cita } from '../db/tipos'
+import { EtiquetaRegla } from '../componentes/EtiquetaRegla'
+import { useCiclosVisibles } from '../componentes/useCiclosVisibles'
+import type { Ciclo, Cita } from '../db/tipos'
 import { crearIcs, enlaceGoogleCalendar, nombreArchivoIcs } from '../utils/calendario'
 import { cuandoFalta, fechaConDia, hoyISO } from '../utils/fechas'
 import { normalizar } from '../utils/texto'
@@ -19,6 +21,7 @@ export function Citas({ perfilId }: { perfilId: string }) {
   const [editando, setEditando] = useState<Cita | null>()
 
   const proximas = useLiveQuery(() => listarProximas(perfilId), [perfilId])
+  const ciclos = useCiclosVisibles(perfilId)
   const pasadas = useLiveQuery(() => listarPasadas(perfilId, { especialidad, busqueda }), [perfilId, especialidad, busqueda])
   const especialidades = useLiveQuery(() => especialidadesPasadas(perfilId), [perfilId])
 
@@ -70,7 +73,7 @@ export function Citas({ perfilId }: { perfilId: string }) {
             {(busqueda || especialidad) && ' encontradas'}
           </p>
           {pasadas.map((c) => (
-            <TarjetaCita key={c.id} cita={c} onCambiar={() => setEditando(c)} />
+            <TarjetaCita key={c.id} cita={c} ciclos={ciclos} onCambiar={() => setEditando(c)} />
           ))}
         </>
       )}
@@ -82,11 +85,22 @@ export function Citas({ perfilId }: { perfilId: string }) {
   )
 }
 
-function TarjetaCita({ cita: c, proxima = false, onCambiar }: { cita: Cita; proxima?: boolean; onCambiar: () => void }) {
+function TarjetaCita({
+  cita: c,
+  proxima = false,
+  ciclos = [],
+  onCambiar,
+}: {
+  cita: Cita
+  proxima?: boolean
+  ciclos?: Ciclo[]
+  onCambiar: () => void
+}) {
   const falta = cuandoFalta(c.fecha)
   return (
     <article className={proxima && (falta === 'Hoy' || falta === 'Mañana') ? 'tarjeta pila tarjeta-pronto' : 'tarjeta pila'} style={{ gap: 6 }}>
       {proxima && <span className="etiqueta" style={{ alignSelf: 'flex-start', fontSize: '1rem' }}>{falta}</span>}
+      {!proxima && <EtiquetaRegla fecha={c.fecha} ciclos={ciclos} />}
       <strong style={{ fontSize: '1.3rem' }}>{c.especialidad}</strong>
       <span>
         {capitalizar(fechaConDia(c.fecha))}

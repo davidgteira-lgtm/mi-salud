@@ -302,6 +302,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .etiqueta-leve { background: var(--aviso-claro); color: #4d3300; }
 .etiqueta-desconocida { background: #e6e9ee; color: var(--texto-suave); }
 .etiqueta-momento { background: #eef2fb; color: #2f3f7a; font-size: 0.95rem; }
+.etiqueta-regla { align-self: flex-start;  background: #f7e1ec; color: #6e2448; }
 
 .tarjeta-alerta { border: 3px solid var(--peligro); }
 
@@ -366,6 +367,100 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .visor img { max-width: 100%; max-height: 80dvh; object-fit: contain; border-radius: 8px; }
 .visor .boton { width: auto; }
 
+/* ---- Gráficas ---- */
+.grafica { margin: 0; padding: 16px 12px 8px; background: var(--superficie); border-radius: var(--radio); box-shadow: var(--sombra); }
+.grafica-titulo { font-weight: 700; margin: 0 4px 6px; }
+.grafica-leyenda { display: flex; gap: 16px; margin: 0 4px 6px; font-size: 0.9rem; color: var(--texto-suave); }
+.grafica-leyenda i, .grafica-globo i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; }
+.grafica-lienzo { position: relative; }
+.grafica svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.grafica svg:focus-visible { outline: 3px solid #f2b705; border-radius: 8px; }
+.grafica-texto { font-size: 13px; font-weight: 700; fill: var(--texto); }
+.grafica-texto-suave { font-size: 12px; fill: var(--texto-suave); }
+.grafica-globo {
+  position: absolute;
+  top: 0;
+  padding: 8px 12px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  box-shadow: var(--sombra);
+  font-size: 0.95rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---- Valoración de un valor (siempre con símbolo y palabra, nunca solo color) ---- */
+.nivel { white-space: nowrap; flex: none; }
+.nivel { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 700; }
+.nivel-bien { background: #e3f5e3; color: #0a5c0a; }
+.nivel-atencion { background: #fff1cc; color: #6b4a00; }
+.nivel-fuera { background: #fde3d8; color: #7a2e10; }
+.nivel-urgente { background: #d03b3b; color: #fff; }
+
+/* ---- Fichas de constantes ---- */
+.fichas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ficha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 118px;
+  padding: 12px;
+  border: 2px solid transparent;
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  font: inherit;
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+}
+.ficha[aria-pressed='true'] { border-color: var(--principal); background: var(--principal-claro); }
+.ficha-nombre { font-size: 0.95rem; font-weight: 700; }
+.ficha-valor { font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
+.ficha-valor small { font-size: 0.75rem; font-weight: 600; color: var(--texto-suave); }
+
+.nivel-sin { background: #e6e9ee; color: var(--texto-suave); }
+
+/* ---- Resultados de análisis ---- */
+.lista-resultados { list-style: none; margin: 0; padding: 0; }
+.lista-resultados li { border-bottom: 1px solid var(--borde); }
+.lista-resultados li:last-child { border-bottom: none; }
+.resultado {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+}
+.resultado-nombre { font-weight: 700; }
+.resultado-valor { text-align: right; font-weight: 700; }
+.resultado-valor small { font-weight: 500; color: var(--texto-suave); }
+.resultado .nivel { justify-self: start; }
+.resultado-ref { grid-column: 2; text-align: right; font-size: 0.85rem; }
+.fila-resultado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.fila-medida { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+.fila-medida:last-child { border-bottom: none; }
+.fila-medida strong { font-size: 1.2rem; }
+
 .dialogo-fondo {
   position: fixed;
   inset: 0;
@@ -376,3 +471,60 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
   background: rgb(0 0 0 / 0.5);
 }
 .dialogo { width: 100%; max-width: 480px; }
+
+/* Tensión en la ficha: "Alta 129" y "Baja 81", cada una en su línea. */
+.ficha-tension { display: flex; flex-direction: column; font-size: 1.35rem; font-weight: 800; line-height: 1.15; }
+.ficha-tension small { display: inline-block; min-width: 2.6em; font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); }
+
+/* Una medida en la lista: valores y "Cambiar" arriba; valoración y fecha debajo. */
+.medida { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+.medida:last-child { border-bottom: none; }
+.medida-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.medida-linea-2 { justify-content: flex-start; flex-wrap: wrap; gap: 4px 10px; }
+.medida-valores { white-space: nowrap; font-size: clamp(0.9rem, 4.2vw, 1.05rem); }
+.medida-valores strong { font-size: clamp(1.05rem, 5vw, 1.25rem); }
+.medida-valores small { font-size: clamp(0.75rem, 3.5vw, 0.85rem); font-weight: 600; color: var(--texto-suave); }
+.medida-valores .medida-secundario { font-size: clamp(0.95rem, 4.3vw, 1.05rem); }
+.medida-fecha { font-size: 0.9rem; }
+.medida-notas { font-size: 0.9rem; }
+.medida .enlace { min-height: 40px; flex: none; }
+.tarjeta:has(> .medida) { padding: 6px 14px; }
+.medida-cambiar-icono { display: none; font-size: 1.3rem; text-decoration: none; }
+@media (max-width: 359px) {
+  .medida-cambiar-texto { display: none; }
+  .medida-cambiar-icono { display: inline-grid; place-items: center; min-width: 40px; min-height: 44px; }
+  .medida-linea { gap: 4px; }
+}
+
+/* ---- Lectura en voz alta: botones redondos, siempre a mano abajo a la derecha ---- */
+.lector-voz {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.lector-boton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--principal);
+  color: #fff;
+  font: inherit;
+  font-size: 1.6rem;
+  line-height: 1;
+  box-shadow: 0 4px 14px rgb(16 36 64 / 0.35);
+  cursor: pointer;
+}
+.lector-boton small { margin-top: 4px; font-size: 0.6rem; font-weight: 700; text-align: center; line-height: 1.05; }
+.lector-activo { background: #1e7a46; }
+.lector-quitar { width: 58px; height: 58px; font-size: 1.1rem; background: var(--superficie); color: var(--principal-oscuro); border-color: var(--principal); }
+/* Que el botón no tape lo último de cada pantalla. */
+.pagina { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }

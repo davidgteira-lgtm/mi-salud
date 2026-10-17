@@ -7,6 +7,7 @@ import { db } from '../db/db'
 import { actualizarPerfil, borrarPerfil, COLORES_PERFIL, crearPerfil } from '../db/perfiles'
 import type { Perfil, Sexo } from '../db/tipos'
 import { usePerfilActivo } from '../perfilActivo'
+import { muestraRegla } from '../utils/ciclos'
 import { hoyISO } from '../utils/fechas'
 import { reducirFoto } from '../utils/imagen'
 
@@ -34,6 +35,7 @@ function Formulario({ existente }: { existente?: Perfil }) {
   const [nombre, setNombre] = useState(existente?.nombre ?? '')
   const [fechaNacimiento, setFecha] = useState(existente?.fechaNacimiento ?? '')
   const [sexo, setSexo] = useState<Sexo | undefined>(existente?.sexo)
+  const [apuntarRegla, setApuntarRegla] = useState<boolean | undefined>(existente?.apuntarRegla)
   const [foto, setFoto] = useState<Blob | undefined>(existente?.foto)
   const [color, setColor] = useState(existente?.color ?? COLORES_PERFIL[0])
   const [error, setError] = useState('')
@@ -51,7 +53,14 @@ function Formulario({ existente }: { existente?: Perfil }) {
       setError('Escribe el nombre, por favor.')
       return
     }
-    const datos = { nombre, fechaNacimiento: fechaNacimiento || undefined, sexo, foto, color }
+    const datos = {
+      nombre,
+      fechaNacimiento: fechaNacimiento || undefined,
+      sexo,
+      apuntarRegla,
+      foto,
+      color,
+    }
     if (id) {
       await actualizarPerfil(id, datos)
       ir('/inicio')
@@ -104,8 +113,11 @@ function Formulario({ existente }: { existente?: Perfil }) {
         </label>
 
         <fieldset className="campo" style={{ border: 0, padding: 0, margin: 0 }}>
-          <span>Sexo</span>
-          <small>Algunas revisiones son distintas para mujeres y hombres.</small>
+          <span>Sexo biológico</span>
+          <small>
+            El de tu cuerpo. La app lo usa solo para cosas médicas (los valores de los análisis, las revisiones y la regla) y no sale de tu
+            móvil.
+          </small>
           <div className="opciones">
             {SEXOS.map((s) => (
               <button key={s.valor} type="button" className="opcion" aria-pressed={sexo === s.valor} onClick={() => setSexo(s.valor)}>
@@ -114,6 +126,29 @@ function Formulario({ existente }: { existente?: Perfil }) {
             ))}
           </div>
         </fieldset>
+
+        {sexo && sexo !== 'hombre' && (
+          <fieldset className="campo" style={{ border: 0, padding: 0, margin: 0 }}>
+            <span>¿Quieres apuntar la regla?</span>
+            <small>Sirve para ver si algún problema de salud coincide con esos días. Puedes cambiarlo cuando quieras.</small>
+            <div className="opciones">
+              {[
+                { valor: true, texto: 'Sí' },
+                { valor: false, texto: 'No' },
+              ].map((o) => (
+                <button
+                  key={o.texto}
+                  type="button"
+                  className="opcion"
+                  aria-pressed={muestraRegla({ sexo, apuntarRegla }) === o.valor}
+                  onClick={() => setApuntarRegla(o.valor)}
+                >
+                  {o.texto}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         <fieldset className="campo" style={{ border: 0, padding: 0, margin: 0 }}>
           <span>Color</span>

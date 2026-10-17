@@ -23,7 +23,7 @@ async function prepararDatos() {
   // Un valor con decimales, para comprobar que no cambia ni una cifra.
   await db.constantes.add({
     id: nuevoId(), perfilId: madre.id, creadoEn: 1, actualizadoEn: 1,
-    fecha: '2026-10-01', sistolica: 135, diastolica: 85, pulso: 72, temperatura: 36.7,
+    tipo: 'tension', fecha: '2026-10-01', valor: 135, valor2: 85, pulso: 72, notas: '36,7 de fiebre',
   })
   await db.adjuntos.add({
     id: nuevoId(), perfilId: madre.id, creadoEn: 1, actualizadoEn: 1,
@@ -50,7 +50,7 @@ describe('copia de seguridad', () => {
 
     expect(total).toBe(5)
     const tension = await db.constantes.where('perfilId').equals(madre.id).first()
-    expect(tension).toMatchObject({ sistolica: 135, diastolica: 85, pulso: 72, temperatura: 36.7 })
+    expect(tension).toMatchObject({ valor: 135, valor2: 85, pulso: 72, notas: '36,7 de fiebre' })
     const foto = await db.adjuntos.where('perfilId').equals(madre.id).first()
     expect(foto?.archivo.type).toBe('image/jpeg')
     expect([...new Uint8Array(await foto!.archivo.arrayBuffer())]).toEqual([255, 216, 255, 0, 1, 2, 3])
