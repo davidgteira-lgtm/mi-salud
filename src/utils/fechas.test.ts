@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calcularEdad, esFechaValida, fechaLarga, hoyISO } from './fechas'
+import { calcularEdad, cuandoFalta, diasEntre, esFechaValida, fechaConDia, fechaLarga, hoyISO } from './fechas'
 
 describe('esFechaValida', () => {
   it('acepta fechas reales', () => {
@@ -40,6 +40,29 @@ describe('fechaLarga', () => {
   it('escribe la fecha en español', () => {
     expect(fechaLarga('1958-03-21')).toBe('21 de marzo de 1958')
     expect(fechaLarga('2026-12-05')).toBe('5 de diciembre de 2026')
+  })
+})
+
+describe('cuandoFalta', () => {
+  it('dice cuánto falta con palabras', () => {
+    expect(cuandoFalta('2026-10-17', '2026-10-17')).toBe('Hoy')
+    expect(cuandoFalta('2026-10-18', '2026-10-17')).toBe('Mañana')
+    expect(cuandoFalta('2026-10-19', '2026-10-17')).toBe('Pasado mañana')
+    expect(cuandoFalta('2026-11-01', '2026-10-17')).toBe('En 15 días')
+    expect(cuandoFalta('2026-10-16', '2026-10-17')).toBe('Ayer')
+    expect(cuandoFalta('2026-10-14', '2026-10-17')).toBe('Hace 3 días')
+  })
+
+  it('no se lía con el cambio de hora de octubre', () => {
+    expect(diasEntre('2026-10-24', '2026-10-26')).toBe(2)
+  })
+})
+
+describe('fechaConDia', () => {
+  it('pone el día de la semana', () => {
+    const hoy = new Date(2026, 9, 17)
+    expect(fechaConDia('2026-10-19', hoy)).toBe('lunes 19 de octubre')
+    expect(fechaConDia('2027-01-01', hoy)).toBe('viernes 1 de enero de 2027')
   })
 })
 

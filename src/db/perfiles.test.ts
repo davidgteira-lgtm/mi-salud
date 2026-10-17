@@ -38,9 +38,9 @@ describe('perfiles', () => {
   it('al borrar una persona se borran sus datos, pero no los de las demás', async () => {
     const madre = await crearPerfil({ nombre: 'Carmen', color: '#1f6f5c' })
     const hijo = await crearPerfil({ nombre: 'David', color: '#2b5797' })
-    await db.citas.add(registro(madre.id, { fecha: '2026-11-02' }))
+    await db.citas.add({ ...registro(madre.id), fecha: '2026-11-02', especialidad: 'Cardiología' })
     await db.medicamentos.add({ ...registro(madre.id), nombre: 'Sintrom', momentos: [], activo: 1 })
-    await db.citas.add(registro(hijo.id, { fecha: '2026-11-03' }))
+    await db.citas.add({ ...registro(hijo.id), fecha: '2026-11-03', especialidad: 'Dentista' })
 
     await borrarPerfil(madre.id)
 

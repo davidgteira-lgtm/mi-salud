@@ -32,6 +32,35 @@ export function fechaLarga(fecha: FechaISO): string {
   return `${d} de ${MESES[m - 1]} de ${a}`
 }
 
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+
+/** "2026-10-20" → "lunes 20 de octubre" (con el año si no es el actual). */
+export function fechaConDia(fecha: FechaISO, hoy: Date = new Date()): string {
+  if (!esFechaValida(fecha)) return fecha
+  const [a, m, d] = fecha.split('-').map(Number)
+  const dia = DIAS_SEMANA[new Date(Date.UTC(a, m - 1, d)).getUTCDay()]
+  return a === hoy.getFullYear() ? `${dia} ${d} de ${MESES[m - 1]}` : `${dia} ${d} de ${MESES[m - 1]} de ${a}`
+}
+
+/** Días de una fecha a otra (positivo si `hasta` es posterior). Sin líos de horas ni de cambio de hora. */
+export function diasEntre(desde: FechaISO, hasta: FechaISO): number {
+  const utc = (f: FechaISO) => {
+    const [a, m, d] = f.split('-').map(Number)
+    return Date.UTC(a, m - 1, d)
+  }
+  return Math.round((utc(hasta) - utc(desde)) / 86_400_000)
+}
+
+/** "Hoy", "Mañana", "En 5 días", "Hace 3 días"… */
+export function cuandoFalta(fecha: FechaISO, hoy: FechaISO = hoyISO()): string {
+  const n = diasEntre(hoy, fecha)
+  if (n === 0) return 'Hoy'
+  if (n === 1) return 'Mañana'
+  if (n === 2) return 'Pasado mañana'
+  if (n === -1) return 'Ayer'
+  return n > 0 ? `En ${n} días` : `Hace ${-n} días`
+}
+
 /** Fecha de hoy en formato AAAA-MM-DD (hora local, no UTC). */
 export function hoyISO(hoy: Date = new Date()): FechaISO {
   const p = (n: number) => String(n).padStart(2, '0')

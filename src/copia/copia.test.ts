@@ -30,7 +30,7 @@ async function prepararDatos() {
     tipo: 'foto', nombre: 'receta.jpg', analisis: 'pendiente',
     archivo: new Blob([new Uint8Array([255, 216, 255, 0, 1, 2, 3])], { type: 'image/jpeg' }),
   })
-  await db.citas.add({ id: nuevoId(), perfilId: hijo.id, creadoEn: 1, actualizadoEn: 1, fecha: '2026-11-03' })
+  await db.citas.add({ id: nuevoId(), perfilId: hijo.id, creadoEn: 1, actualizadoEn: 1, fecha: '2026-11-03', especialidad: 'Dentista' })
   return { madre, hijo }
 }
 

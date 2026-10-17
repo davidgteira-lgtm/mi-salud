@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from './db/db'
@@ -98,5 +98,48 @@ describe('la app', () => {
     expect(await screen.findByText(/Revisa con tu médico/)).toBeInTheDocument()
     // Sale en el aviso de arriba y en su tarjeta.
     expect(screen.getAllByText('Augmentine 875')).toHaveLength(2)
+  })
+
+  it('desde el inicio se puede poner la foto de la persona', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText(/Toca la cámara de arriba para poner tu foto/)).toBeInTheDocument()
+    const foto = new File([new Uint8Array([255, 216, 255])], 'carmen.jpg', { type: 'image/jpeg' })
+    await usuario.upload(screen.getByLabelText('Poner foto de Carmen'), foto)
+
+    expect(await screen.findByRole('button', { name: 'Cambiar foto' })).toBeInTheDocument()
+    expect(screen.queryByText(/Toca la cámara de arriba/)).not.toBeInTheDocument()
+    expect((await db.perfiles.toArray())[0].foto).toBeDefined()
+  })
+
+  it('apunta una cita para mañana y el inicio avisa', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Citas médicas/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Añadir cita/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Cardiología' }))
+    const manana = new Date()
+    manana.setDate(manana.getDate() + 1)
+    const p = (n: number) => String(n).padStart(2, '0')
+    const fecha = `${manana.getFullYear()}-${p(manana.getMonth() + 1)}-${p(manana.getDate())}`
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: fecha } })
+    fireEvent.change(screen.getByLabelText('Hora'), { target: { value: '10:30' } })
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('Mañana')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Añadir al calendario/ })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: /Volver al inicio/ }))
+    expect(await screen.findByRole('link', { name: /Mañana a las 10:30: Cardiología/ })).toBeInTheDocument()
   })
 })

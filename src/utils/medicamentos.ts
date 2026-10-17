@@ -1,15 +1,8 @@
 // Reconocer medicamentos escritos de cualquier manera y avisar si chocan con una alergia.
 import { CATALOGO, GRUPOS, type GrupoAlergia, type MedicamentoCatalogo } from '../datos/catalogoMedicamentos'
+import { normalizar } from './texto'
 
-/** "Amoxicilina/Ácido Clavulánico 875mg" → "amoxicilina acido clavulanico 875mg" */
-export function normalizar(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-}
+export { normalizar }
 
 /** ¿Aparece la frase como palabras completas dentro del texto? (ya normalizados) */
 function contiene(texto: string, frase: string): boolean {

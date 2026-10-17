@@ -94,7 +94,8 @@ p { margin: 0 0 0.8em; }
 .campo { display: flex; flex-direction: column; gap: 6px; }
 .campo > span { font-weight: 700; }
 .campo small { color: var(--texto-suave); font-size: 0.85rem; }
-input[type='text'], input[type='date'], input[type='password'], input[type='number'], select, textarea {
+input[type='text'], input[type='date'], input[type='time'], input[type='tel'], input[type='search'],
+input[type='password'], input[type='number'], select, textarea {
   width: 100%;
   min-height: 60px;
   padding: 12px 16px;
@@ -159,6 +160,24 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-pequeno { width: 52px; height: 52px; font-size: 1.3rem; }
+
+/* Foto con botón de cámara encima. */
+.avatar-editable { position: relative; flex: none; }
+.avatar-boton { position: relative; padding: 0; border: none; background: none; cursor: pointer; border-radius: 50%; }
+.avatar-camara {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--superficie);
+  border: 2px solid var(--principal);
+  font-size: 1.05rem;
+  box-shadow: var(--sombra);
+}
 
 .persona {
   display: flex;
@@ -310,6 +329,42 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 
 .sugerencias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -6px; }
 .sugerencias .opcion { min-height: 52px; padding: 0 16px; }
+
+/* ---- Citas e historial ---- */
+.tarjeta-pronto { border: 3px solid var(--principal); }
+.titulo-ano { margin: 8px 0 0; color: var(--principal-oscuro); }
+.aviso-cita {
+  display: block;
+  text-decoration: none;
+  background: var(--principal-claro);
+  color: var(--principal-oscuro);
+  border-left-color: var(--principal);
+}
+
+/* ---- Fotos, documentos y notas de voz ---- */
+.botones-adjuntos { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.botones-adjuntos .boton { justify-content: flex-start; font-size: 1rem; }
+.lista-adjuntos { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fila-adjunto { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.adjunto-foto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+}
+.adjunto-foto img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borde); }
+.adjunto-documento { display: inline-flex; align-items: center; min-height: 48px; color: var(--principal-oscuro); font-weight: 600; }
+.adjunto-voz { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.adjunto-voz audio { width: 100%; }
+.visor { flex-direction: column; gap: 16px; background: rgb(0 0 0 / 0.85); }
+.visor img { max-width: 100%; max-height: 80dvh; object-fit: contain; border-radius: 8px; }
+.visor .boton { width: auto; }
 
 .dialogo-fondo {
   position: fixed;

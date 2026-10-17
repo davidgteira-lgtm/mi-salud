@@ -72,7 +72,47 @@ export interface Medicamento extends RegistroBase {
   notas?: string
 }
 
-export type TipoContacto ='centro-salud' | 'medico' | 'hospital' | 'farmacia' | 'otro'
+/** Una cita médica, próxima o pasada. */
+export interface Cita extends RegistroBase {
+  fecha: FechaISO
+  /** "10:30". Puede no saberse. */
+  hora?: string
+  especialidad: string
+  medico?: string
+  lugar?: string
+  motivo?: string
+  /** Lo que te dijeron en la consulta (se rellena después). */
+  resultado?: string
+  anulada?: boolean
+}
+
+export type TipoHistorial =
+  | 'consulta'
+  | 'informe'
+  | 'prueba'
+  | 'operacion'
+  | 'ingreso'
+  | 'urgencias'
+  | 'diagnostico'
+  | 'otro'
+
+/** Una entrada del historial: visita, informe, prueba, operación… */
+export interface EntradaHistorial extends RegistroBase {
+  fecha: FechaISO
+  tipo: TipoHistorial
+  titulo: string
+  /** Para las pruebas: radiografía, TAC, ecografía… */
+  prueba?: string
+  especialidad?: string
+  centro?: string
+  medico?: string
+  /** Qué dice o qué pasó, con palabras normales. */
+  resumen?: string
+  /** Solo para diagnósticos: si es una enfermedad que dura (diabetes, hipertensión…). */
+  cronica?: boolean
+}
+
+export type TipoContacto = 'centro-salud' | 'medico' | 'hospital' | 'farmacia' | 'otro'
 
 /** Un teléfono de un centro médico, médico, hospital… para llamar con un toque. */
 export interface Contacto extends RegistroBase {
