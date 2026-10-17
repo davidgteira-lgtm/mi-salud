@@ -528,3 +528,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .lector-quitar { width: 58px; height: 58px; font-size: 1.1rem; background: var(--superficie); color: var(--principal-oscuro); border-color: var(--principal); }
 /* Que el botón no tape lo último de cada pantalla. */
 .pagina { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+
+/* ---------- Salud dental ---------- */
+.odontograma { display: grid; gap: 4px; background: var(--superficie); border-radius: var(--radio); box-shadow: var(--sombra); padding: 12px 8px; }
+.arcada { margin: 0; }
+.arcada-titulo { display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px; font-size: 0.8rem; color: var(--texto-suave); }
+.arcada-titulo strong { font-size: 1rem; color: var(--texto); }
+.arcada svg { display: block; width: 100%; height: auto; overflow: visible; }
+.arcada-centro { font-size: 13px; fill: var(--texto-suave); font-style: italic; }
+.diente-tocable { cursor: pointer; }
+.diente-tocable:focus { outline: none; }
+.diente-tocable:focus-visible rect:nth-of-type(2) { stroke: var(--principal-oscuro); stroke-width: 4; }
+.leyenda-dientes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 12px; font-size: 0.95rem; }
+.leyenda-dientes li { display: flex; align-items: center; gap: 8px; }
+.leyenda-dientes svg { flex: none; }
+.dientes-elegidos { margin: 0; padding-left: 1.2em; }
+.numero-diente { font-size: 11px; font-weight: 600; fill: var(--texto-suave); pointer-events: none; }
+.numero-diente-marcado { font-size: 12.5px; font-weight: 800; fill: var(--principal-oscuro); }
+.odontograma .leyenda-dientes { border-top: 1px solid var(--borde); padding: 10px 6px 2px; margin-top: 4px; }

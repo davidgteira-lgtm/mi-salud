@@ -193,3 +193,27 @@ export const TABLAS_DE_PERFIL = [
 ] as const
 
 export type TablaDePerfil = (typeof TABLAS_DE_PERFIL)[number]
+
+/** Lo que hizo el dentista. Ver datos/dientes.ts para los textos. */
+export type TipoDental =
+  | 'revision'
+  | 'limpieza'
+  | 'caries'
+  | 'empaste'
+  | 'endodoncia'
+  | 'corona'
+  | 'extraccion'
+  | 'implante'
+  | 'protesis'
+  | 'ortodoncia'
+  | 'otro'
+
+/** Una visita al dentista o algo que te hicieron en uno o varios dientes. */
+export interface TratamientoDental extends RegistroBase {
+  fecha: FechaISO
+  tipo: TipoDental
+  /** Dientes con la numeración del dentista (11 a 48). Vacío = toda la boca. */
+  dientes: number[]
+  dentista?: string
+  notas?: string
+}

@@ -2,7 +2,20 @@
 // del móvil, a través de Dexie (una librería que hace IndexedDB más fácil de usar).
 // Todo se queda en el móvil: nada se envía a ningún sitio.
 import Dexie, { type Table } from 'dexie'
-import type { Adjunto, Alergia, Analitica, Cita, Ciclo, Contacto, EntradaHistorial, Medicamento, Medida, Perfil, RegistroBase } from './tipos'
+import type {
+  Adjunto,
+  Alergia,
+  Analitica,
+  Cita,
+  Ciclo,
+  Contacto,
+  EntradaHistorial,
+  Medicamento,
+  Medida,
+  Perfil,
+  RegistroBase,
+  TratamientoDental,
+} from './tipos'
 
 /** Registro genérico mientras cada sección no tenga su forma definitiva. */
 export type RegistroLibre = RegistroBase & Record<string, unknown>
@@ -14,7 +27,7 @@ export class BaseDeDatos extends Dexie {
   historial!: Table<EntradaHistorial, string>
   analiticas!: Table<Analitica, string>
   revisiones!: Table<RegistroLibre, string>
-  dental!: Table<RegistroLibre, string>
+  dental!: Table<TratamientoDental, string>
   constantes!: Table<Medida, string>
   alergias!: Table<Alergia, string>
   adjuntos!: Table<Adjunto, string>
@@ -47,6 +60,10 @@ export class BaseDeDatos extends Dexie {
     // Versión 3: ciclos de la regla.
     this.version(3).stores({
       ciclos: 'id, perfilId, [perfilId+inicio]',
+    })
+    // Versión 4: salud dental. La tabla estaba vacía; ahora se busca por fecha.
+    this.version(4).stores({
+      dental: 'id, perfilId, [perfilId+fecha]',
     })
   }
 }

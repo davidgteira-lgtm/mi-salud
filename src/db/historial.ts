@@ -100,8 +100,8 @@ export async function enfermedadesCronicas(perfilId: string): Promise<EntradaHis
 }
 
 /** Agrupa por año: [["2026", [...]], ["2025", [...]]] */
-export function agruparPorAno(lista: EntradaHistorial[]): [string, EntradaHistorial[]][] {
-  const grupos = new Map<string, EntradaHistorial[]>()
+export function agruparPorAno<T extends { fecha: string }>(lista: T[]): [string, T[]][] {
+  const grupos = new Map<string, T[]>()
   for (const h of lista) {
     const ano = h.fecha.slice(0, 4)
     grupos.set(ano, [...(grupos.get(ano) ?? []), h])

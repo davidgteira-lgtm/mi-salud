@@ -7,6 +7,7 @@ import { Alergias } from './Alergias'
 import { Analisis } from './Analisis'
 import { Citas } from './Citas'
 import { Constantes } from './Constantes'
+import { Dental } from './Dental'
 import { Historial } from './Historial'
 import { Medicacion } from './Medicacion'
 import { Telefonos } from './Telefonos'
@@ -17,6 +18,7 @@ const CONTENIDO: Record<string, ComponentType<{ perfilId: string }>> = {
   analisis: Analisis,
   citas: Citas,
   constantes: Constantes,
+  dental: Dental,
   historial: Historial,
   medicacion: Medicacion,
   telefonos: Telefonos,

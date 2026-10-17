@@ -160,6 +160,28 @@ describe('la app', () => {
     expect((await db.ciclos.toArray())[0]).toMatchObject({ inicio: '2026-09-04', fin: '2026-09-08', sintomas: ['Dolor'] })
   })
 
+  it('apunta un empaste tocando el diente en el dibujo', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Manuel')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Salud dental/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Apuntar visita al dentista/ }))
+    await usuario.click(screen.getByRole('button', { name: /Empaste/ }))
+    // Sin dientes no deja guardar.
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(screen.getByText(/Toca en el dibujo/)).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: /^Primera muela de abajo, a tu izquierda \(36\)/ }))
+    expect(screen.getByText('Primera muela de abajo, a tu izquierda')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByRole('button', { name: /\(36\): empaste/ })).toBeInTheDocument()
+    expect((await db.dental.toArray())[0]).toMatchObject({ tipo: 'empaste', dientes: [36] })
+  })
+
   it('pega el texto de un informe y guarda los resultados', async () => {
     const usuario = userEvent.setup()
     render(<App />)
