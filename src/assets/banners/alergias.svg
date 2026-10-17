@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 350">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e6f0fa"/>
+      <stop offset="1" stop-color="#bcd4ee"/>
+    </linearGradient>
+    <linearGradient id="aluminio" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f6f9"/>
+      <stop offset=".5" stop-color="#cfd6df"/>
+      <stop offset="1" stop-color="#e9edf2"/>
+    </linearGradient>
+    <radialGradient id="blanca" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dfe4ea"/>
+    </radialGradient>
+    <radialGradient id="roja" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#ff7a6e"/>
+      <stop offset="1" stop-color="#c62828"/>
+    </radialGradient>
+    <filter id="sombra" x="-10%" y="-10%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1b2633" flood-opacity=".25"/>
+    </filter>
+    <g id="hueco"><rect x="-38" y="-20" width="76" height="40" rx="20" fill="#ffffff" fill-opacity=".55" stroke="#b5bfcb" stroke-width="2"/></g>
+  </defs>
+  <rect width="800" height="400" fill="url(#fondo)"/>
+  <circle cx="90" cy="60" r="80" fill="#ffffff" opacity=".35"/>
+  <circle cx="760" cy="380" r="110" fill="#ffffff" opacity=".3"/>
+
+  <!-- Blíster -->
+  <g transform="translate(320 125) rotate(-10)" filter="url(#sombra)">
+    <rect x="-200" y="-95" width="400" height="190" rx="22" fill="url(#aluminio)" stroke="#aeb8c4" stroke-width="2"/>
+    <g fill="url(#blanca)" stroke="#c3cad3" stroke-width="2">
+      <use href="#hueco" x="-150" y="-45"/><use href="#hueco" x="-75" y="-45"/><use href="#hueco" x="0" y="-45"/><use href="#hueco" x="75" y="-45"/><use href="#hueco" x="150" y="-45"/>
+      <use href="#hueco" x="-150" y="45"/><use href="#hueco" x="-75" y="45"/><use href="#hueco" x="0" y="45"/><use href="#hueco" x="75" y="45"/><use href="#hueco" x="150" y="45"/>
+      <rect x="-180" y="-60" width="60" height="30" rx="15"/><rect x="-105" y="-60" width="60" height="30" rx="15"/><rect x="-30" y="-60" width="60" height="30" rx="15"/><rect x="45" y="-60" width="60" height="30" rx="15"/><rect x="120" y="-60" width="60" height="30" rx="15"/>
+      <rect x="-180" y="30" width="60" height="30" rx="15"/><rect x="-105" y="30" width="60" height="30" rx="15"/><rect x="45" y="30" width="60" height="30" rx="15"/><rect x="120" y="30" width="60" height="30" rx="15"/>
+    </g>
+    <!-- La pastilla roja: la que sienta mal -->
+    <rect x="-30" y="30" width="60" height="30" rx="15" fill="url(#roja)" stroke="#9e1c1c" stroke-width="2"/>
+  </g>
+
+  <!-- Señal de peligro -->
+  <g filter="url(#sombra)">
+    <path d="M640 60 L770 290 Q778 306 760 306 L520 306 Q502 306 510 290 Z" fill="#f7c948" stroke="#c0392b" stroke-width="20" stroke-linejoin="round"/>
+    <rect x="627" y="135" width="26" height="100" rx="13" fill="#1b2633"/>
+    <circle cx="640" cy="268" r="16" fill="#1b2633"/>
+  </g>
+</svg>

@@ -1,0 +1,278 @@
+/* Estilos de toda la app: letra grande, botones grandes y mucho contraste. */
+:root {
+  /* Azules y tonos pastel. Los colores fuertes se reservan para botones y avisos,
+     para que el texto siempre se lea bien. */
+  --fondo: #eef4fa;
+  --superficie: #ffffff;
+  --texto: #1b2633;
+  --texto-suave: #45525f;
+  --borde: #c9d8e8;
+  --principal: #2e5c8a;
+  --principal-oscuro: #1f4468;
+  --principal-claro: #dbe9f6;
+  --peligro: #b3261e;
+  --peligro-claro: #fbe9e7;
+  --aviso: #8a5a00;
+  --aviso-claro: #fff4d6;
+  --radio: 18px;
+  --sombra: 0 2px 10px rgb(30 60 100 / 0.10);
+
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--texto);
+  background: var(--fondo);
+  -webkit-text-size-adjust: 100%;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--fondo);
+}
+
+h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5em; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.3rem; }
+p { margin: 0 0 0.8em; }
+
+.pagina {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+/* ---- Botones ---- */
+.boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 20px;
+  border: 2px solid transparent;
+  border-radius: var(--radio);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--principal);
+  color: #fff;
+}
+.boton:active { transform: scale(0.98); }
+.boton:disabled { opacity: 0.5; cursor: not-allowed; }
+.boton-secundario { background: var(--superficie); color: var(--principal-oscuro); border-color: var(--principal); }
+.boton-peligro { background: var(--peligro); }
+.boton-peligro-suave { background: var(--superficie); color: var(--peligro); border-color: var(--peligro); }
+
+.boton-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: 56px;
+  padding: 8px 16px 8px 8px;
+  margin-bottom: 12px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--principal-oscuro);
+  cursor: pointer;
+}
+
+:focus-visible { outline: 4px solid #f2b705; outline-offset: 3px; }
+
+.pila { display: flex; flex-direction: column; gap: 14px; }
+
+/* ---- Formularios ---- */
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo > span { font-weight: 700; }
+.campo small { color: var(--texto-suave); font-size: 0.85rem; }
+input[type='text'], input[type='date'], input[type='password'], input[type='number'], select, textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 12px 16px;
+  border: 2px solid var(--borde);
+  border-radius: 14px;
+  font: inherit;
+  background: var(--superficie);
+  color: var(--texto);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--principal); outline: none; }
+
+.opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+.opcion {
+  min-height: 60px;
+  border: 2px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto);
+  cursor: pointer;
+}
+.opcion[aria-pressed='true'] { border-color: var(--principal); background: var(--principal-claro); color: var(--principal-oscuro); }
+
+.colores { display: flex; flex-wrap: wrap; gap: 12px; }
+.color {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  cursor: pointer;
+}
+.color[aria-pressed='true'] { border-color: var(--texto); }
+
+/* ---- Tarjetas y avisos ---- */
+.tarjeta {
+  background: var(--superficie);
+  border-radius: var(--radio);
+  padding: 20px;
+  box-shadow: var(--sombra);
+}
+.aviso {
+  border-radius: var(--radio);
+  padding: 16px 18px;
+  background: var(--aviso-claro);
+  color: #4d3300;
+  border-left: 8px solid var(--aviso);
+}
+.aviso-error { background: var(--peligro-claro); color: #5c130e; border-left-color: var(--peligro); }
+.aviso-ok { background: var(--principal-claro); color: var(--principal-oscuro); border-left-color: var(--principal); }
+
+/* ---- Personas ---- */
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-pequeno { width: 52px; height: 52px; font-size: 1.3rem; }
+
+.persona {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 104px;
+  padding: 16px 20px;
+  border: 2px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--sombra);
+}
+
+/* ---- Cabecera de inicio ---- */
+.cabecera { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.cabecera a { text-decoration: none; }
+.cabecera h1 { margin: 0; font-size: 1.5rem; }
+.cabecera .boton { width: auto; min-height: 56px; margin-left: auto; padding: 8px 14px; font-size: 0.9rem; }
+
+/* ---- Banners de las secciones ---- */
+.banner {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 150px;
+  border-radius: var(--radio);
+  overflow: hidden;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: var(--sombra);
+  isolation: isolate;
+}
+.banner:active { transform: scale(0.985); }
+.banner img, .banner .banner-fondo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.banner .banner-fondo { display: grid; place-items: center end; padding-right: 24px; font-size: 4.5rem; }
+.banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(16 36 64 / 0.80) 0%, rgb(16 36 64 / 0.35) 55%, rgb(16 36 64 / 0.05) 100%);
+}
+.banner-texto { padding: 18px 20px; }
+.banner-texto strong { display: block; font-size: 1.45rem; line-height: 1.15; text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); }
+.banner-texto span { display: block; font-size: 0.95rem; opacity: 0.95; text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); }
+
+.banner-emergencia {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 80px;
+  padding: 14px 20px;
+  border-radius: var(--radio);
+  background: var(--peligro);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: var(--sombra);
+}
+.banner-emergencia small { display: block; font-size: 0.85rem; font-weight: 500; }
+
+.cabecera-seccion { position: relative; min-height: 170px; margin-bottom: 18px; }
+
+/* ---- Teléfonos ---- */
+.contacto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+.contacto-emergencia { background: var(--peligro-claro); border: 2px solid var(--peligro); }
+.contacto-datos { display: flex; flex-direction: column; gap: 2px; }
+.contacto-datos strong { font-size: 1.25rem; }
+.contacto-tipo { font-size: 0.9rem; font-weight: 700; color: var(--texto-suave); }
+.contacto-numero { font-size: 1.2rem; letter-spacing: 0.03em; }
+/* Verde, como el botón de llamar de cualquier teléfono. */
+.boton-llamar { background: #1e7a46; min-height: 72px; font-size: 1.2rem; }
+.enlace {
+  align-self: flex-start;
+  min-height: 48px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--principal-oscuro);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dialogo-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.5);
+}
+.dialogo { width: 100%; max-width: 480px; }
