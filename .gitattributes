@@ -1,0 +1,6 @@
+# Documentos e imágenes: tal cual, sin cambiar los saltos de línea (si no, los PDF se estropean).
+*.pdf binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
