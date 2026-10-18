@@ -11,6 +11,7 @@ import fotoDatos from './assets/banners/datos.webp'
 import fotoDental from './assets/banners/dental.webp'
 import fotoHistorial from './assets/banners/historial.webp'
 import fotoMedicacion from './assets/banners/medicacion.webp'
+import fotoOjos from './assets/banners/ojos.webp'
 import fotoRevisiones from './assets/banners/revisiones.webp'
 import fotoTelefonos from './assets/banners/telefonos.webp'
 
@@ -105,6 +106,8 @@ export const SECCIONES: Seccion[] = [
     titulo: 'Salud ocular',
     descripcion: 'Graduación de la vista y cómo va cambiando',
     icono: '👁️',
+    imagen: fotoOjos,
+    encuadre: '45% 52%',
     fondo: 'linear-gradient(135deg, #9fd8cf, #2f8577)',
   },
   {
