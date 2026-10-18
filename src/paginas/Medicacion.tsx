@@ -1,3 +1,6 @@
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
+import { esHora, HORA_DE_MOMENTO, horasDe } from '../utils/tomas'
+import { TomaDeAhora } from '../componentes/TomaDeAhora'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
 import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -14,9 +17,9 @@ import {
   revisarMedicamento,
   volverATomar,
 } from '../db/medicamentos'
-import type { Alergia, Medicamento, Momento } from '../db/tipos'
+import type { Alergia, Medicamento } from '../db/tipos'
 import { fechaLarga, hoyISO } from '../utils/fechas'
-import { buscarMedicamento, comprobarAlergias, sugerirMedicamentos, type AvisoAlergia } from '../utils/medicamentos'
+import { buscarMedicamento, comprobarAlergias, sugerirMedicamentos, tipoDeMedicamento, type AvisoAlergia } from '../utils/medicamentos'
 
 /** Medicación: lo que se toma ahora y lo que se tomó antes, con avisos de alergia. */
 export function Medicacion({ perfilId }: { perfilId: string }) {
@@ -24,7 +27,7 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
   const anteriores = useLiveQuery(() => listarMedicamentos(perfilId, false), [perfilId])
   const alergias = useLiveQuery(() => listarAlergias(perfilId), [perfilId])
   const [pestana, setPestana] = useState<'ahora' | 'antes'>('ahora')
-  const [editando, setEditando] = useState<Medicamento | null>()
+  const [editando, setEditando] = useState<Medicamento | null | undefined>(() => (pideNuevo() ? null : undefined))
   const [dejando, setDejando] = useState<Medicamento>()
 
   if (!actuales || !anteriores || !alergias) return null
@@ -90,7 +93,7 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
       </button>
 
       <p className="texto-suave" style={{ fontSize: '0.85rem' }}>
-        La familia y el uso de cada medicamento son orientativos. Ante cualquier duda, pregunta a tu médico o en la farmacia.
+        El tipo y el uso de cada medicamento son orientativos. Ante cualquier duda, pregunta a tu médico o en la farmacia.
       </p>
 
       {dejando && (
@@ -122,14 +125,14 @@ function TarjetaMedicamento(props: {
     <article className={props.avisos.length > 0 ? 'tarjeta pila tarjeta-alerta' : 'tarjeta pila'} style={{ gap: 8 }}>
       <strong style={{ fontSize: '1.3rem' }}>{m.nombre}</strong>
       {m.dosis && <span>{m.dosis}</span>}
-      {(m.momentos.length > 0 || m.otroHorario) && (
+      {(horasDe(m).length > 0 || m.otroHorario) && (
         <div className="etiquetas">
-          {MOMENTOS.filter((x) => m.momentos.includes(x.valor)).map((x) => (
-            <span key={x.valor} className="etiqueta etiqueta-momento">
-              {x.icono} {x.texto}
+          {horasDe(m).map((h) => (
+            <span key={h} className="etiqueta etiqueta-momento">
+              🕒 {h}
             </span>
           ))}
-          {m.otroHorario && <span className="etiqueta etiqueta-momento">🕒 {m.otroHorario}</span>}
+          {m.otroHorario && <span className="etiqueta etiqueta-momento">📝 {m.otroHorario}</span>}
         </div>
       )}
       {m.paraQue && (
@@ -138,10 +141,10 @@ function TarjetaMedicamento(props: {
           {m.paraQue}
         </span>
       )}
-      {m.familia && (
+      {tipoDeMedicamento(m) && (
         <span>
-          <span className="texto-suave">Familia: </span>
-          {m.familia}
+          <span className="texto-suave">Tipo de medicamento: </span>
+          {tipoDeMedicamento(m)}
         </span>
       )}
       <span className="texto-suave">
@@ -151,6 +154,7 @@ function TarjetaMedicamento(props: {
               .filter(Boolean)
               .join(' ')}
       </span>
+      {m.activo === 1 && <TomaDeAhora medicamento={m} />}
       {props.avisos.map((a) => (
         <p key={a.alergia.id} className={a.nivel === 'alto' ? 'aviso aviso-error' : 'aviso'} style={{ margin: 0 }}>
           ⚠️ {a.motivo}
@@ -177,7 +181,8 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
   const m = props.medicamento
   const [nombre, setNombre] = useState(m?.nombre ?? '')
   const [dosis, setDosis] = useState(m?.dosis ?? '')
-  const [momentos, setMomentos] = useState<Momento[]>(m?.momentos ?? [])
+  // Las horas de cada toma. Un medicamento antiguo con «desayuno», «cena»… empieza con sus horas habituales.
+  const [horas, setHoras] = useState<string[]>(() => (m ? horasDe(m) : []))
   const [otroHorario, setOtroHorario] = useState(m?.otroHorario ?? '')
   const [paraQue, setParaQue] = useState(m?.paraQue ?? '')
   const [familia, setFamilia] = useState(m?.familia ?? '')
@@ -186,7 +191,7 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
   const [fechaFin, setFechaFin] = useState(m?.fechaFin ?? '')
   const [notas, setNotas] = useState(m?.notas ?? '')
   const [error, setError] = useState('')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [confirmarAlergia, setConfirmarAlergia] = useState(false)
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
@@ -195,15 +200,13 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
   const avisos = comprobarAlergias(nombre, props.alergias)
   const hayAvisoFuerte = avisos.some((a) => a.nivel === 'alto')
 
-  function cambiarMomento(valor: Momento) {
-    setMomentos((actual) => (actual.includes(valor) ? actual.filter((x) => x !== valor) : [...actual, valor]))
-  }
-
   function datos() {
     return {
       nombre,
       dosis,
-      momentos,
+      // Ya van con hora: los momentos antiguos se quitan.
+      momentos: [],
+      horas,
       otroHorario,
       paraQue,
       familia,
@@ -258,7 +261,7 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
       {reconocido && (
         <div className="aviso aviso-ok" style={{ margin: 0 }}>
           <div>
-            <strong>Familia:</strong> {reconocido.familia}
+            <strong>Tipo de medicamento:</strong> {reconocido.familia}
           </div>
           <div>
             <strong>Se suele usar para:</strong> {reconocido.paraQue}
@@ -276,7 +279,7 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
         <input type="text" value={dosis} onChange={(e) => setDosis(e.target.value)} placeholder="1 comprimido, media pastilla…" />
       </label>
 
-      <Selector etiqueta="¿Cuándo lo tomas?" ayuda="Puedes marcar varios." opciones={MOMENTOS} valor={momentos} onCambio={cambiarMomento} />
+      <EditorHoras horas={horas} onCambio={setHoras} />
 
       <label className="campo">
         <span>Otro horario (si quieres)</span>
@@ -290,8 +293,13 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
 
       {m && (
         <label className="campo">
-          <span>Familia</span>
-          <input type="text" value={familia} onChange={(e) => setFamilia(e.target.value)} />
+          <span>Tipo de medicamento (si lo sabes)</span>
+          <input
+            type="text"
+            value={familia}
+            onChange={(e) => setFamilia(e.target.value)}
+            placeholder="Antibiótico, analgésico, estatina…"
+          />
         </label>
       )}
 
@@ -372,5 +380,47 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
         </Confirmar>
       )}
     </form>
+  )
+}
+
+/** Las horas de las tomas: atajos por comida y una hora exacta para cada toma. */
+function EditorHoras({ horas, onCambio }: { horas: string[]; onCambio: (h: string[]) => void }) {
+  const [nueva, setNueva] = useState('08:00')
+  const anadir = (h: string) => onCambio([...new Set([...horas, h])].sort())
+  return (
+    <fieldset className="campo" style={{ border: 0, padding: 0, margin: 0 }}>
+      <span>¿A qué hora lo tomas?</span>
+      <small>Pon una hora por cada toma. Así la app te deja marcar cada una como «Tomada».</small>
+      {horas.length > 0 && (
+        <div className="etiquetas">
+          {horas.map((h) => (
+            <span key={h} className="hora-toma">
+              🕒 {h}
+              <button
+                type="button"
+                className="enlace"
+                onClick={() => onCambio(horas.filter((x) => x !== h))}
+                aria-label={`Quitar las ${h}`}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="sugerencias">
+        {MOMENTOS.filter((x) => !horas.includes(HORA_DE_MOMENTO[x.valor])).map((x) => (
+          <button key={x.valor} type="button" className="opcion" onClick={() => anadir(HORA_DE_MOMENTO[x.valor])}>
+            {x.icono} {x.texto} ({HORA_DE_MOMENTO[x.valor]})
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <input type="time" value={nueva} onChange={(e) => setNueva(e.target.value)} aria-label="Otra hora" style={{ flex: 1 }} />
+        <button type="button" className="boton boton-secundario" style={{ width: 'auto' }} onClick={() => esHora(nueva) && anadir(nueva)}>
+          ➕ Añadir hora
+        </button>
+      </div>
+    </fieldset>
   )
 }

@@ -1,3 +1,4 @@
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
@@ -51,7 +52,7 @@ type Editando =
 /** Revisiones y vacunas: lo que te toca por tu edad y lo que ya te has hecho. */
 export function Revisiones({ perfilId }: { perfilId: string }) {
   const ir = useNavigate()
-  const [editando, setEditando] = useState<Editando>()
+  const [editando, setEditando] = useState<Editando | undefined>(() => (pideNuevo() ? { que: 'registro', tipo: 'revision' } : undefined))
   const [quitar, setQuitar] = useState<QueToca>()
   const perfil = useLiveQuery(() => db.perfiles.get(perfilId), [perfilId])
   const registros = useLiveQuery(() => listarRegistros(perfilId), [perfilId])
@@ -311,7 +312,7 @@ function FormularioRegistro(props: {
   const [lote, setLote] = useState(r?.lote ?? '')
   const [lugar, setLugar] = useState(r?.lugar ?? '')
   const [notas, setNotas] = useState(r?.notas ?? '')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 

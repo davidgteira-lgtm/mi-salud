@@ -4,11 +4,20 @@ import { AvatarEditable } from '../componentes/AvatarEditable'
 import { Banner } from '../componentes/Banner'
 import { diasDesdeUltimaCopia } from '../copia/recordatorio'
 import { listarProximas } from '../db/citas'
+import { listarMedicamentos } from '../db/medicamentos'
+import { textoValor } from '../db/constantes'
+import { db } from '../db/db'
+import { enfermedadesCronicas } from '../db/historial'
+import { datosEnlazados, listarRegistros, queToca } from '../db/revisiones'
+import type { Perfil } from '../db/tipos'
+import { controlesEnCasa } from '../utils/controles'
+import { TomaDeAhora } from '../componentes/TomaDeAhora'
+import { horasDe } from '../utils/tomas'
 import { adjuntosPendientes, sePuedeAnalizar } from '../ia/analizar'
 import { obtenerClave } from '../ia/claude'
 import { usePerfilActivo } from '../perfilActivo'
 import { SECCIONES } from '../secciones'
-import { cuandoFalta, diasEntre, hoyISO } from '../utils/fechas'
+import { calcularEdad, cuandoFalta, diasEntre, esFechaValida, hoyISO } from '../utils/fechas'
 
 const DIAS_AVISO = 7
 
@@ -53,6 +62,103 @@ function EntradaIa({ perfilId }: { perfilId: string }) {
     </Link>
   )
 }
+
+/** En el inicio: la toma de ahora de cada medicamento, para ver de un vistazo si ya se ha tomado. */
+function MedicacionDeAhora({ perfilId }: { perfilId: string }) {
+  const meds = useLiveQuery(async () => (await listarMedicamentos(perfilId, true)).filter((m) => horasDe(m).length > 0), [perfilId])
+  if (!meds?.length) return null
+  return (
+    <div className="pila" aria-label="Medicación de ahora" style={{ gap: 10 }}>
+      <h3 className="hoy-titulo">💊 Medicación</h3>
+      {meds.map((m) => (
+        <TomaDeAhora key={m.id} medicamento={m} conNombre />
+      ))}
+    </div>
+  )
+}
+
+/** Controles en casa (azúcar, tensión) que tocan hoy, con un botón para apuntarlos. */
+function ControlesDeHoy({ perfilId }: { perfilId: string }) {
+  const hoy = hoyISO()
+  const controles = useLiveQuery(async () => {
+    const [enfermedades, medicamentos, medidas] = await Promise.all([
+      enfermedadesCronicas(perfilId),
+      listarMedicamentos(perfilId, true),
+      db.constantes.where('[perfilId+fecha]').equals([perfilId, hoy]).toArray(),
+    ])
+    return controlesEnCasa({ enfermedades, medicamentos, medidas, hoy })
+  }, [perfilId, hoy])
+  if (!controles?.length) return null
+  return (
+    <div className="pila" style={{ gap: 10 }}>
+      <h3 className="hoy-titulo">🩺 Controles en casa</h3>
+      {controles.map((c) => (
+        <div key={c.tipo} className={c.deHoy ? 'toma toma-hecha' : 'toma'}>
+          <span className="toma-texto">
+            <strong>
+              {c.tipo === 'glucosa' ? '🩸' : '🩺'} {c.titulo}
+            </strong>
+            <span className="texto-suave"> · {c.motivo}</span>
+          </span>
+          {c.deHoy ? (
+            <span>
+              ✅ Apuntado hoy: <strong>{textoValor(c.deHoy)}</strong>
+              {c.deHoy.hora && ` a las ${c.deHoy.hora}`}
+            </span>
+          ) : (
+            <Link
+              to={`/seccion/constantes?tipo=${c.tipo}&nueva=1`}
+              className="toma-boton"
+              style={{ textAlign: 'center', textDecoration: 'none', padding: '14px' }}
+            >
+              ⬜ Aún no · Apuntarlo
+            </Link>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Revisiones y vacunas que tocan ya. */
+function RevisionesDeHoy({ perfil }: { perfil: Perfil }) {
+  const tocan = useLiveQuery(async () => {
+    const edad = perfil.fechaNacimiento && esFechaValida(perfil.fechaNacimiento) ? calcularEdad(perfil.fechaNacimiento) : undefined
+    const [registros, enlazados] = await Promise.all([listarRegistros(perfil.id), datosEnlazados(perfil.id)])
+    return queToca({
+      edad,
+      sexo: perfil.sexo,
+      registros,
+      enlazados,
+      ocultas: perfil.revisionesOcultas,
+      propias: perfil.revisionesPropias,
+    }).filter((x) => x.estado === 'toca')
+  }, [perfil])
+  if (!tocan?.length) return null
+  return (
+    <Link to="/seccion/revisiones" className="aviso" style={{ display: 'block', textDecoration: 'none', margin: 0 }}>
+      <strong>💉 Te toca:</strong>{' '}
+      {tocan
+        .slice(0, 3)
+        .map((x) => x.nombre.charAt(0).toLowerCase() + x.nombre.slice(1))
+        .join(', ')}
+      {tocan.length > 3 && ` y ${tocan.length - 3} más`}. <strong>Ver</strong>
+    </Link>
+  )
+}
+
+/** Lo de hoy, nada más entrar: citas cercanas, tomas, controles en casa y revisiones que tocan. */
+function PanelHoy({ perfil }: { perfil: Perfil }) {
+  return (
+    <section className="tarjeta pila panel-hoy" aria-label="Hoy" style={{ gap: 12 }}>
+      <h2 style={{ margin: 0 }}>🔔 Hoy</h2>
+      <AvisoProximasCitas perfilId={perfil.id} />
+      <MedicacionDeAhora perfilId={perfil.id} />
+      <ControlesDeHoy perfilId={perfil.id} />
+      <RevisionesDeHoy perfil={perfil} />
+    </section>
+  )
+}
 /** Pantalla de inicio con los banners de todas las secciones. */
 export function Inicio() {
   const { perfil, elegir } = usePerfilActivo()
@@ -77,6 +183,8 @@ export function Inicio() {
         </button>
       </header>
 
+      <PanelHoy perfil={perfil} />
+
       {perfil.ejemplo && (
         <p className="aviso aviso-cita" role="note">
           👀 <strong>Persona de ejemplo:</strong> todos sus datos son inventados. Para usar la app de verdad, pulsa «Cambiar persona» y
@@ -92,8 +200,6 @@ export function Inicio() {
       </Link>
 
       {!perfil.foto && !perfil.ejemplo && <p className="aviso aviso-cita">📷 Toca la cámara de arriba para poner tu foto.</p>}
-
-      <AvisoProximasCitas perfilId={perfil.id} />
 
       <EntradaIa perfilId={perfil.id} />
 

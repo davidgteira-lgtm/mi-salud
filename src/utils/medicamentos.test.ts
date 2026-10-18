@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CATALOGO, GRUPOS } from '../datos/catalogoMedicamentos'
 import {
   buscarMedicamento,
+  tipoDeMedicamento,
   comprobarAlergias,
   ejemplosDeAviso,
   normalizar,
@@ -163,5 +164,18 @@ describe('la lista de medicamentos está bien hecha', () => {
     for (const m of CATALOGO) {
       for (const n of [m.nombre, ...(m.otrosNombres ?? [])]) expect(buscarMedicamento(n), n).toBe(m)
     }
+  })
+})
+
+describe('tipo de medicamento', () => {
+  it('dice la familia farmacológica, no para qué sirve', () => {
+    expect(tipoDeMedicamento({ nombre: 'Atorvastatina 20 mg', paraQue: 'El colesterol' })).toBe('Estatina (hipolipemiante)')
+    expect(tipoDeMedicamento({ nombre: 'Amoxicilina 500' })).toBe('Antibiótico (penicilina)')
+    expect(tipoDeMedicamento({ nombre: 'Enalapril', familia: 'Para la tensión (IECA)' })).toBe('Antihipertensivo (IECA)')
+  })
+
+  it('no repite «para qué» aunque se haya guardado así antes', () => {
+    expect(tipoDeMedicamento({ nombre: 'Algo raro', familia: 'Para el colesterol', paraQue: 'El colesterol' })).toBeUndefined()
+    expect(tipoDeMedicamento({ nombre: 'Algo raro', familia: 'Antibiótico', paraQue: 'Infección' })).toBe('Antibiótico')
   })
 })

@@ -123,3 +123,14 @@ export function ejemplosDeAviso(nombreAlergia: string, maximo = 4): string[] {
 function mayusculaInicial(t: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
+
+/**
+ * El tipo de medicamento que se enseña (antibiótico, estatina…). Si está en la lista de la app, se usa
+ * el de la lista, que está al día; si no, el que escribió la persona. Si solo repite «para qué sirve», no se enseña.
+ */
+export function tipoDeMedicamento(m: { nombre: string; familia?: string; paraQue?: string }): string | undefined {
+  const tipo = buscarMedicamento(m.nombre)?.familia ?? m.familia?.trim()
+  if (!tipo) return undefined
+  const repite = m.paraQue && (normalizar(tipo).includes(normalizar(m.paraQue)) || /^para /i.test(tipo))
+  return repite ? undefined : tipo
+}

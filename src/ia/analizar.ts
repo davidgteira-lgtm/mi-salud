@@ -48,11 +48,16 @@ export function bloquesDeTexto(mensaje: string): Bloque[] {
 }
 
 /** Pide a la IA las propuestas. No guarda nada: eso lo decide la persona. */
-export async function pedirPropuestas(clave: string, perfil: Perfil, contenido: Bloque[]): Promise<Lectura> {
+export async function pedirPropuestas(clave: string, perfil: Perfil, contenido: Bloque[], seccion?: string): Promise<Lectura> {
   const [medicamentos, alergias] = await Promise.all([listarMedicamentos(perfil.id, true), listarAlergias(perfil.id)])
   const { datos } = await llamarClaude({
     clave,
-    sistema: instrucciones(perfil, { medicamentos: medicamentos.map((m) => m.nombre), alergias: alergias.map((a) => a.nombre) }),
+    sistema:
+      instrucciones(perfil, { medicamentos: medicamentos.map((m) => m.nombre), alergias: alergias.map((a) => a.nombre) }) +
+      (seccion
+        ? `
+La persona lo ha subido desde la sección «» de la app: si encaja, propón sobre todo registros de ese tipo.`
+        : ''),
     contenido,
     herramienta: HERRAMIENTA,
   })

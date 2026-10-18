@@ -1,3 +1,4 @@
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useRef, useState, type FormEvent } from 'react'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
@@ -56,7 +57,7 @@ function EtiquetaEstado({ estado }: { estado: EstadoResultado }) {
 export function Analisis({ perfilId }: { perfilId: string }) {
   const [pestana, setPestana] = useState<'lista' | 'evolucion'>('lista')
   const [grupo, setGrupo] = useState<string>()
-  const [editando, setEditando] = useState<Analitica | null>()
+  const [editando, setEditando] = useState<Analitica | null | undefined>(() => (pideNuevo() ? null : undefined))
   const analiticas = useLiveQuery(() => listarAnaliticas(perfilId), [perfilId])
 
   if (editando !== undefined) {
@@ -307,7 +308,7 @@ function FormularioAnalitica(props: { perfilId: string; analitica?: Analitica; o
   const [pegando, setPegando] = useState(false)
   const [textoPegado, setTextoPegado] = useState('')
   const [avisoPegado, setAvisoPegado] = useState('')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [leyendo, setLeyendo] = useState(false)
   const [sinLeer, setSinLeer] = useState<{ tipo: 'foto' | 'documento'; archivo: Blob }>()
   const [permisoIa, setPermisoIa] = useState(false)

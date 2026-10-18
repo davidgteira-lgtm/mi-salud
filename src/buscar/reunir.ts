@@ -10,6 +10,7 @@ import { TIPOS_HISTORIAL } from '../db/historial'
 import { TIPOS_CONTACTO } from '../db/telefonos'
 import type { TipoConstante } from '../db/tipos'
 import { duracionRegla } from '../utils/ciclos'
+import { tipoDeMedicamento } from '../utils/medicamentos'
 import { fechaLarga, hoyISO } from '../utils/fechas'
 import type { Documento } from './consulta'
 
@@ -49,7 +50,7 @@ export async function reunirDocumentos(perfilId: string): Promise<Documento[]> {
       titulo: m.nombre,
       detalle: juntar(m.dosis, m.activo ? 'Lo tomas ahora' : `Lo dejaste${m.fechaFin ? ` el ${fechaLarga(m.fechaFin)}` : ''}`),
       fecha: m.fechaInicio,
-      textos: ['Medicación', m.paraQue ?? '', m.familia ?? '', m.otroHorario ?? '', m.notas ?? ''],
+      textos: ['Medicación', m.paraQue ?? '', tipoDeMedicamento(m) ?? m.familia ?? '', m.otroHorario ?? '', m.notas ?? ''],
     })
   }
   for (const c of citas) {

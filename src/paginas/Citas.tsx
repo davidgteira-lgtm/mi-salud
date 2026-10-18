@@ -1,3 +1,4 @@
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
@@ -18,7 +19,7 @@ export function Citas({ perfilId }: { perfilId: string }) {
   const [pestana, setPestana] = useState<'proximas' | 'pasadas'>('proximas')
   const [especialidad, setEspecialidad] = useState('')
   const [busqueda, setBusqueda] = useState('')
-  const [editando, setEditando] = useState<Cita | null>()
+  const [editando, setEditando] = useState<Cita | null | undefined>(() => (pideNuevo() ? null : undefined))
 
   const proximas = useLiveQuery(() => listarProximas(perfilId), [perfilId])
   const ciclos = useCiclosVisibles(perfilId)
@@ -148,7 +149,7 @@ function FormularioCita(props: { perfilId: string; cita?: Cita; onTerminar: () =
   const [motivo, setMotivo] = useState(c?.motivo ?? '')
   const [resultado, setResultado] = useState(c?.resultado ?? '')
   const [estado, setEstado] = useState<'normal' | 'anulada'>(c?.anulada ? 'anulada' : 'normal')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
   const contactos = useLiveQuery(() => listarContactos(props.perfilId), [props.perfilId])

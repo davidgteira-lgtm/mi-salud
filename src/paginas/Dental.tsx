@@ -1,3 +1,4 @@
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
@@ -8,6 +9,9 @@ import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import {
   borrarDental,
   dentistasUsados,
+  euros,
+  gastoDental,
+  leerImporte,
   estadoDeLosDientes,
   guardarDental,
   historiaDelDiente,
@@ -22,7 +26,9 @@ import { normalizar } from '../utils/texto'
 
 /** Salud dental: el dibujo de la boca, lo que tiene cada diente y todo lo que te han hecho. */
 export function Dental({ perfilId }: { perfilId: string }) {
-  const [editando, setEditando] = useState<{ tratamiento?: TratamientoDental; dientes?: number[] }>()
+  const [editando, setEditando] = useState<{ tratamiento?: TratamientoDental; dientes?: number[] } | undefined>(() =>
+    pideNuevo() ? {} : undefined,
+  )
   const [diente, setDiente] = useState<number>()
   const lista = useLiveQuery(() => listarDental(perfilId), [perfilId])
 
@@ -41,6 +47,7 @@ export function Dental({ perfilId }: { perfilId: string }) {
 
   const estados = estadoDeLosDientes(lista)
   const revision = ultimaRevision(lista)
+  const gasto = gastoDental(lista, Number(hoyISO().slice(0, 4)))
   const caries = [...estados.values()].filter((e) => e === 'caries').length
   const historia = diente ? historiaDelDiente(lista, diente) : []
 
@@ -88,7 +95,6 @@ export function Dental({ perfilId }: { perfilId: string }) {
         </section>
       )}
 
-
       <button className="boton" onClick={() => setEditando({})}>
         ➕ Apuntar visita al dentista
       </button>
@@ -101,6 +107,12 @@ export function Dental({ perfilId }: { perfilId: string }) {
       ) : (
         <>
           <h2 style={{ marginBottom: 0 }}>Lo que te han hecho</h2>
+          {gasto.total > 0 && (
+            <p style={{ margin: 0 }}>
+              💶 Llevas pagado <strong>{euros(gasto.total)}</strong> en el dentista
+              {gasto.ano > 0 && ` (este año, ${euros(gasto.ano)})`}.
+            </p>
+          )}
           {revision && !revision.haceMasDeUnAno && (
             <p className="texto-suave" style={{ margin: 0 }}>
               Última revisión: {fechaLarga(revision.fecha)}.
@@ -138,6 +150,7 @@ function TarjetaDental({ tratamiento: t, onCambiar }: { tratamiento: Tratamiento
         info.boca && <span>Toda la boca</span>
       )}
       {t.dentista && <span>📍 {t.dentista}</span>}
+      {t.importe !== undefined && <span>💶 {euros(t.importe)}</span>}
       {t.notas && <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{t.notas}</p>}
       <VerAdjuntos registroId={t.id} />
       <button className="enlace" onClick={onCambiar}>
@@ -160,7 +173,8 @@ function FormularioDental(props: {
   const [fecha, setFecha] = useState(t?.fecha ?? hoyISO())
   const [dentista, setDentista] = useState(t?.dentista ?? '')
   const [notas, setNotas] = useState(t?.notas ?? '')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [importe, setImporte] = useState(t?.importe !== undefined ? String(t.importe).replace('.', ',') : '')
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
@@ -176,7 +190,9 @@ function FormularioDental(props: {
   async function guardar(e: FormEvent) {
     e.preventDefault()
     if (!tipo) return setError('Elige qué te hicieron, por favor.')
-    const datos = { fecha, tipo, dientes, dentista, notas }
+    const cantidad = leerImporte(importe)
+    if (cantidad !== null && Number.isNaN(cantidad)) return setError('No entiendo el importe. Escríbelo así: 85 o 1.200,50.')
+    const datos = { fecha, tipo, dientes, dentista, notas, importe: cantidad ?? undefined }
     const problema = revisarDental(datos)
     if (problema) return setError(problema)
     const id = await guardarDental(props.perfilId, datos, t?.id)
@@ -247,10 +263,27 @@ function FormularioDental(props: {
 
       <label className="campo">
         <span>Notas (si quieres)</span>
-        <textarea rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Me dolía al masticar, presupuesto, próxima cita…" />
+        <textarea
+          rows={3}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Me dolía al masticar, presupuesto, próxima cita…"
+        />
       </label>
 
-      <EditorAdjuntos registroId={t?.id} pendientes={pendientes} onPendientes={setPendientes} />
+      <label className="campo">
+        <span>¿Cuánto pagaste? (si quieres)</span>
+        <small>En euros. Te sirve para comparar con otro dentista y saber lo que llevas gastado.</small>
+        <input type="text" inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="85,00" />
+      </label>
+
+      <EditorAdjuntos
+        registroId={t?.id}
+        pendientes={pendientes}
+        onPendientes={setPendientes}
+        titulo="Factura, presupuesto y radiografías"
+        ayuda="Sube aquí la factura de lo que pagaste (foto o PDF), el presupuesto o las radiografías."
+      />
 
       {error && <p className="aviso aviso-error">{error}</p>}
 

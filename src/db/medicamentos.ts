@@ -1,4 +1,5 @@
 // Guardar los medicamentos de cada persona: los que toma ahora y los que tomó antes.
+import { esHora } from '../utils/tomas'
 import { borrarAdjuntosDe } from './adjuntos'
 import { hoyISO } from '../utils/fechas'
 import { buscarMedicamento } from '../utils/medicamentos'
@@ -14,7 +15,7 @@ export const MOMENTOS: { valor: Momento; texto: string; icono: string }[] = [
 
 export type DatosMedicamento = Pick<
   Medicamento,
-  'nombre' | 'dosis' | 'momentos' | 'otroHorario' | 'paraQue' | 'familia' | 'fechaInicio' | 'fechaFin' | 'activo' | 'notas'
+  'nombre' | 'dosis' | 'momentos' | 'horas' | 'otroHorario' | 'paraQue' | 'familia' | 'fechaInicio' | 'fechaFin' | 'activo' | 'notas'
 >
 
 export function revisarMedicamento(datos: DatosMedicamento): string | null {
@@ -22,6 +23,7 @@ export function revisarMedicamento(datos: DatosMedicamento): string | null {
   if (datos.fechaInicio && datos.fechaFin && datos.fechaFin < datos.fechaInicio) {
     return 'La fecha en que lo dejaste no puede ser anterior a la fecha en que empezaste.'
   }
+  if (datos.horas?.some((h) => !esHora(h))) return 'Alguna hora no es correcta. Escríbela así: 08:00.'
   return null
 }
 
@@ -34,6 +36,7 @@ export async function guardarMedicamento(perfilId: string, datos: DatosMedicamen
     dosis: texto(datos.dosis),
     // Siempre en el mismo orden del día, sin repetir.
     momentos: MOMENTOS.map((m) => m.valor).filter((m) => datos.momentos.includes(m)),
+    horas: datos.horas?.length ? [...new Set(datos.horas)].sort() : undefined,
     otroHorario: texto(datos.otroHorario),
     paraQue: texto(datos.paraQue),
     // Si no se sabe la familia, se busca en la lista de medicamentos.
@@ -67,8 +70,9 @@ export async function volverATomar(id: string, fecha: string = hoyISO()): Promis
 
 /** Lo borra junto con sus fotos y documentos. */
 export async function borrarMedicamento(id: string): Promise<void> {
-  await db.transaction('rw', db.medicamentos, db.adjuntos, async () => {
+  await db.transaction('rw', [db.medicamentos, db.adjuntos, db.tomas], async () => {
     await borrarAdjuntosDe(id)
+    await db.tomas.where('medicamentoId').equals(id).delete()
     await db.medicamentos.delete(id)
   })
 }

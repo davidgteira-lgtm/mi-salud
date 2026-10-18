@@ -99,3 +99,15 @@ describe('secciones nuevas en el ejemplo', () => {
     expect(bajas.filter((b) => !b.fin).map((b) => b.motivo)).toEqual(['Gripe'])
   })
 })
+
+describe('tomas y bajas de Rosa', () => {
+  it('tiene horas en sus medicamentos, tomas marcadas y bajas con su alta', async () => {
+    const rosaId = await crearEjemplos(HOY)
+    const meds = await db.medicamentos.where('perfilId').equals(rosaId).filter((m) => m.activo === 1).toArray()
+    expect(meds.every((m) => (m.horas?.length ?? 0) > 0)).toBe(true)
+    expect(await db.tomas.where('perfilId').equals(rosaId).count()).toBeGreaterThan(10)
+    const bajas = await db.bajas.where('perfilId').equals(rosaId).toArray()
+    expect(bajas.map((b) => b.motivo).sort()).toEqual(['Esguince de muñeca', 'Lumbalgia'])
+    expect(bajas.every((b) => b.fin)).toBe(true)
+  })
+})

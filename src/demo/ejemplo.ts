@@ -14,6 +14,7 @@ import { guardarHistorial } from '../db/historial'
 import { dejarDeTomar, guardarMedicamento } from '../db/medicamentos'
 import { guardarOcular } from '../db/ojos'
 import { borrarPerfil, crearPerfil } from '../db/perfiles'
+import { marcarTomada } from '../db/tomas'
 import { guardarPropia, guardarRegistro } from '../db/revisiones'
 import { guardarContacto } from '../db/telefonos'
 import type { FechaISO, ResultadoAnalisis, RevisionOcular } from '../db/tipos'
@@ -95,7 +96,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   await guardarMedicamento(id, {
     nombre: 'Sintrom 4 mg',
     dosis: 'Según la hoja de control',
-    momentos: ['cena'],
+    momentos: [],
+    horas: ['20:00'],
     paraQue: 'Arritmia (que no se formen coágulos)',
     familia: 'Anticoagulante',
     fechaInicio: `${ano - 6}-03-15`,
@@ -104,7 +106,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   await guardarMedicamento(id, {
     nombre: 'Enalapril 20 mg',
     dosis: '1 comprimido',
-    momentos: ['desayuno'],
+    momentos: [],
+    horas: ['08:00'],
     paraQue: 'La tensión',
     fechaInicio: `${ano - 14}-05-02`,
     activo: 1,
@@ -112,7 +115,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   await guardarMedicamento(id, {
     nombre: 'Atorvastatina 20 mg',
     dosis: '1 comprimido',
-    momentos: ['cena'],
+    momentos: [],
+    horas: ['21:30'],
     paraQue: 'El colesterol',
     fechaInicio: `${ano - 4}-09-20`,
     activo: 1,
@@ -120,7 +124,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   await guardarMedicamento(id, {
     nombre: 'Metformina 850 mg',
     dosis: '1 comprimido',
-    momentos: ['desayuno', 'cena'],
+    momentos: [],
+    horas: ['08:30', '21:00'],
     paraQue: 'El azúcar',
     fechaInicio: `${ano - 8}-01-10`,
     activo: 1,
@@ -128,7 +133,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   await guardarMedicamento(id, {
     nombre: 'Pantoprazol 40 mg',
     dosis: '1 cápsula',
-    momentos: ['desayuno'],
+    momentos: [],
+    horas: ['07:30'],
     paraQue: 'Proteger el estómago',
     fechaInicio: dia(-120),
     activo: 1,
@@ -143,6 +149,51 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   })
   await dejarDeTomar(omeprazol, dia(-121))
 
+
+  // Tomas: los días pasados, casi todo «Tomada» (una se le olvidó). Hoy, lo que ya tocaba, salvo la metformina.
+  const ahora = new Date()
+  const horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+  const hoyReal = hoyISO(ahora)
+  for (const med of await db.medicamentos.where('perfilId').equals(id).filter((m) => m.activo === 1).toArray()) {
+    for (const hora of med.horas ?? []) {
+      for (let n = -3; n <= 0; n++) {
+        const fecha = sumarDias(hoyReal, n)
+        const olvidada = n === -1 && med.nombre.startsWith('Metformina') && hora === '21:00'
+        const pendienteHoy = n === 0 && (hora > horaAhora || med.nombre.startsWith('Metformina'))
+        if (olvidada || pendienteHoy) continue
+        const [h, mi] = hora.split(':').map(Number)
+        const cuando = new Date(`${fecha}T${hora}`).getTime() + ((h * 7 + mi) % 25) * 60_000
+        await marcarTomada(id, med.id, { fecha, hora }, cuando)
+      }
+    }
+  }
+
+  // Bajas de cuando trabajaba.
+  await guardarBaja(id, {
+    inicio: `${ano - 8}-02-11`,
+    fin: `${ano - 8}-03-04`,
+    tipo: 'comun',
+    motivo: 'Lumbalgia',
+    diagnostico: 'Dolor lumbar con ciática',
+    medico: 'Dra. Ejemplo',
+    centro: 'Centro de Salud Ejemplo',
+    empresa: 'Comercio Ejemplo S. A.',
+    confirmaciones: [`${ano - 8}-02-18`, `${ano - 8}-02-25`],
+    tipoAlta: 'curacion',
+  })
+  await guardarBaja(id, {
+    inicio: `${ano - 7}-05-06`,
+    fin: `${ano - 7}-06-14`,
+    tipo: 'accidente-laboral',
+    motivo: 'Esguince de muñeca',
+    diagnostico: 'Caída en el almacén. Esguince de muñeca derecha',
+    medico: 'Dr. Ejemplo',
+    centro: 'Mutua Ejemplo',
+    empresa: 'Comercio Ejemplo S. A.',
+    confirmaciones: [`${ano - 7}-05-13`, `${ano - 7}-05-27`, `${ano - 7}-06-10`],
+    tipoAlta: 'mejoria',
+    notas: 'Rehabilitación en la mutua tres semanas.',
+  })
   // Citas: próximas y pasadas.
   await guardarCita(id, {
     fecha: dia(3),
@@ -225,6 +276,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     titulo: 'Caída en casa',
     centro: 'Hospital Ejemplo',
     resumen: 'Golpe en el brazo sin fractura. Tenía fiebre de una gripe.',
+    medicacion: ['Paracetamol 1 g'],
   })
   await guardarHistorial(id, {
     fecha: dia(-182),
@@ -364,12 +416,12 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   if (cardio) await guardarRegistro(id, { tipo: 'revision', clave: cardio.clave, nombre: cardio.nombre, fecha: dia(-182) })
 
   // Dentista.
-  await guardarDental(id, { fecha: `${ano - 11}-04-10`, tipo: 'extraccion', dientes: [38, 48], dentista: 'Clínica Dental Ejemplo' })
-  await guardarDental(id, { fecha: `${ano - 6}-02-15`, tipo: 'empaste', dientes: [16, 26, 36], dentista: 'Clínica Dental Ejemplo' })
-  await guardarDental(id, { fecha: `${ano - 3}-11-20`, tipo: 'endodoncia', dientes: [46], dentista: 'Clínica Dental Ejemplo' })
-  await guardarDental(id, { fecha: `${ano - 2}-01-12`, tipo: 'corona', dientes: [46], dentista: 'Clínica Dental Ejemplo' })
-  await guardarDental(id, { fecha: `${ano - 2}-06-03`, tipo: 'implante', dientes: [38], dentista: 'Clínica Dental Ejemplo' })
-  await guardarDental(id, { fecha: dia(-420), tipo: 'limpieza', dientes: [], dentista: 'Clínica Dental Ejemplo' })
+  await guardarDental(id, { fecha: `${ano - 11}-04-10`, tipo: 'extraccion', dientes: [38, 48], dentista: 'Clínica Dental Ejemplo', importe: 120 })
+  await guardarDental(id, { fecha: `${ano - 6}-02-15`, tipo: 'empaste', dientes: [16, 26, 36], dentista: 'Clínica Dental Ejemplo', importe: 165 })
+  await guardarDental(id, { fecha: `${ano - 3}-11-20`, tipo: 'endodoncia', dientes: [46], dentista: 'Clínica Dental Ejemplo', importe: 180 })
+  await guardarDental(id, { fecha: `${ano - 2}-01-12`, tipo: 'corona', dientes: [46], dentista: 'Clínica Dental Ejemplo', importe: 390 })
+  await guardarDental(id, { fecha: `${ano - 2}-06-03`, tipo: 'implante', dientes: [38], dentista: 'Clínica Dental Ejemplo', importe: 1150 })
+  await guardarDental(id, { fecha: dia(-420), tipo: 'limpieza', dientes: [], dentista: 'Clínica Dental Ejemplo', importe: 55 })
   await guardarDental(id, {
     fecha: dia(-420),
     tipo: 'caries',
@@ -470,6 +522,7 @@ async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<st
     titulo: 'Migraña fuerte',
     especialidad: 'Medicina de familia',
     resumen: 'Tres días con dolor. Empezar con sumatriptán.',
+    medicacion: ['Sumatriptán 50 mg'],
   })
   await guardarHistorial(id, {
     fecha: dia(-40),

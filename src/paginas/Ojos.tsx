@@ -1,4 +1,5 @@
 // Salud ocular: la graduación de cada ojo, explicada, y cómo va cambiando.
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
@@ -38,7 +39,7 @@ function valorTexto(clave: keyof GraduacionOjo, v: number): string {
 }
 
 export function Ojos({ perfilId }: { perfilId: string }) {
-  const [editando, setEditando] = useState<RevisionOcular | null>()
+  const [editando, setEditando] = useState<RevisionOcular | null | undefined>(() => (pideNuevo() ? null : undefined))
   const lista = useLiveQuery(() => listarOcular(perfilId), [perfilId])
   if (editando !== undefined) {
     return <FormularioOcular perfilId={perfilId} revision={editando ?? undefined} onTerminar={() => setEditando(undefined)} />
@@ -183,7 +184,7 @@ function FormularioOcular(props: { perfilId: string; revision?: RevisionOcular; 
   })
   const [diagnostico, setDiagnostico] = useState(r?.diagnostico ?? '')
   const [notas, setNotas] = useState(r?.notas ?? '')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 

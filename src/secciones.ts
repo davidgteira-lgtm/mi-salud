@@ -5,6 +5,7 @@
 // El dibujo de alergias está hecho a medida para la app.
 import fotoAlergias from './assets/banners/alergias.svg'
 import fotoAnalisis from './assets/banners/analisis.webp'
+import fotoBajas from './assets/banners/bajas.jpg'
 import fotoCitas from './assets/banners/citas.webp'
 import fotoConstantes from './assets/banners/constantes.webp'
 import fotoDatos from './assets/banners/datos.webp'
@@ -55,14 +56,6 @@ export const SECCIONES: Seccion[] = [
     fondo: 'linear-gradient(135deg, #a9b8e6, #5f74b8)',
   },
   {
-    clave: 'telefonos',
-    titulo: 'Teléfonos de centros médicos',
-    descripcion: 'Llama a tu médico',
-    icono: '📞',
-    imagen: fotoTelefonos,
-    fondo: 'linear-gradient(135deg, #a8cde8, #3f7aa8)',
-  },
-  {
     clave: 'historial',
     titulo: 'Historial',
     descripcion: 'Informes, pruebas, radiografías y operaciones',
@@ -75,6 +68,8 @@ export const SECCIONES: Seccion[] = [
     titulo: 'Bajas médicas',
     descripcion: 'Bajas, partes de confirmación y altas',
     icono: '📋',
+    imagen: fotoBajas,
+    encuadre: 'center 45%',
     fondo: 'linear-gradient(135deg, #c7c2e8, #6a5fa8)',
   },
   {
@@ -107,7 +102,7 @@ export const SECCIONES: Seccion[] = [
     descripcion: 'Graduación de la vista y cómo va cambiando',
     icono: '👁️',
     imagen: fotoOjos,
-    encuadre: '45% 52%',
+    encuadre: '70% 55%',
     fondo: 'linear-gradient(135deg, #9fd8cf, #2f8577)',
   },
   {
@@ -133,6 +128,14 @@ export const SECCIONES: Seccion[] = [
     icono: '🏥',
     imagen: fotoDatos,
     fondo: 'linear-gradient(135deg, #b8c4dc, #5c6c94)',
+  },
+  {
+    clave: 'telefonos',
+    titulo: 'Teléfonos de centros médicos',
+    descripcion: 'Llama a tu médico',
+    icono: '📞',
+    imagen: fotoTelefonos,
+    fondo: 'linear-gradient(135deg, #a8cde8, #3f7aa8)',
   },
 ]
 

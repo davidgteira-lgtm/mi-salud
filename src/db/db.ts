@@ -18,6 +18,7 @@ import type {
   RegistroRevision,
   RevisionOcular,
   Baja,
+  Toma,
   TratamientoDental,
 } from './tipos'
 
@@ -40,6 +41,7 @@ export class BaseDeDatos extends Dexie {
   telefonos!: Table<Contacto, string>
   ojos!: Table<RevisionOcular, string>
   bajas!: Table<Baja, string>
+  tomas!: Table<Toma, string>
   ciclos!: Table<Ciclo, string>
 
   constructor(nombre = 'mi-salud') {
@@ -75,6 +77,10 @@ export class BaseDeDatos extends Dexie {
     this.version(5).stores({
       ojos: 'id, perfilId, [perfilId+fecha]',
       bajas: 'id, perfilId, [perfilId+inicio]',
+    })
+    // Versión 6: tomas de la medicación («Tomada» / «Sin tomar»).
+    this.version(6).stores({
+      tomas: 'id, perfilId, medicamentoId, [medicamentoId+fecha+hora]',
     })
   }
 }

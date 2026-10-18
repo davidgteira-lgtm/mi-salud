@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { Confirmar } from '../componentes/Confirmar'
@@ -24,13 +25,16 @@ function horaActual(): string {
 
 /** Constantes vitales: la última de cada una arriba; gráfica y lista de la elegida. */
 export function Constantes({ perfilId }: { perfilId: string }) {
-  const [elegido, setTipo] = useState<TipoConstante | 'regla'>('tension')
+  // Desde el panel «Hoy» se llega con ?tipo=glucosa&nueva=1: se abre directamente el formulario.
+  const [parametros] = useSearchParams()
+  const pedido = CONSTANTES.find((c) => c.tipo === parametros.get('tipo'))?.tipo
+  const [elegido, setTipo] = useState<TipoConstante | 'regla'>(pedido ?? 'tension')
   const perfil = useLiveQuery(() => db.perfiles.get(perfilId), [perfilId])
   const conRegla = muestraRegla(perfil)
   // Si se quita la regla en la ficha de la persona, se vuelve a la tensión.
   const tipo: TipoConstante = elegido === 'regla' ? 'tension' : elegido
   const verRegla = elegido === 'regla' && conRegla
-  const [editando, setEditando] = useState<Medida | null>()
+  const [editando, setEditando] = useState<Medida | null | undefined>(pedido && parametros.get('nueva') ? null : undefined)
   const ultimas = useLiveQuery(() => ultimasMedidas(perfilId), [perfilId])
   const medidas = useLiveQuery(() => listarMedidas(perfilId, tipo), [perfilId, tipo])
 

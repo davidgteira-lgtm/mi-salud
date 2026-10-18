@@ -34,7 +34,7 @@ export const PRUEBAS = [
 
 export type DatosHistorial = Pick<
   EntradaHistorial,
-  'fecha' | 'tipo' | 'titulo' | 'prueba' | 'especialidad' | 'centro' | 'medico' | 'resumen' | 'cronica'
+  'fecha' | 'tipo' | 'titulo' | 'prueba' | 'especialidad' | 'centro' | 'medico' | 'resumen' | 'cronica' | 'medicacion'
 >
 
 export function revisarHistorial(datos: DatosHistorial): string | null {
@@ -57,6 +57,7 @@ export async function guardarHistorial(perfilId: string, datos: DatosHistorial, 
     medico: texto(datos.medico),
     resumen: texto(datos.resumen),
     cronica: datos.tipo === 'diagnostico' ? Boolean(datos.cronica) : undefined,
+    medicacion: datos.medicacion?.map((m) => m.trim()).filter(Boolean).length ? [...new Set(datos.medicacion.map((m) => m.trim()).filter(Boolean))] : undefined,
   }
   const ahora = Date.now()
   if (id) {

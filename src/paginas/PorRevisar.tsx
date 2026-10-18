@@ -1,7 +1,7 @@
 // «Por revisar»: la IA lee tus documentos o lo que le cuentas, propone qué apuntar y tú confirmas.
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { MiniaturaAdjunto } from '../componentes/Adjuntos'
 import { Confirmar } from '../componentes/Confirmar'
 import { QueSeEnvia } from '../componentes/AjustesIa'
@@ -43,6 +43,22 @@ function Contenido({ perfil }: { perfil: Perfil }) {
   const [error, setError] = useState('')
   const [resultado, setResultado] = useState<Resultado>()
   const [preguntar, setPreguntar] = useState<() => void>()
+  // Desde el atajo de una sección se llega con ?adjunto=…&seccion=…: se empieza a leer solo.
+  const [parametros] = useSearchParams()
+  const pedido = parametros.get('adjunto')
+  const seccion = parametros.get('seccion') ?? undefined
+  const empezado = useRef(false)
+  useEffect(() => {
+    if (!clave || !pendientes || !pedido || empezado.current) return
+    const a = pendientes.find((x) => x.id === pedido)
+    if (!a || !sePuedeAnalizar(a).si) return
+    empezado.current = true
+    const hacer = () => analizar(a.id, () => bloquesDeAdjunto(a), a)
+    if (iaAceptada()) hacer()
+    else setPreguntar(() => hacer)
+    // Solo al llegar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendientes])
 
   if (!clave) {
     return (
@@ -62,7 +78,7 @@ function Contenido({ perfil }: { perfil: Perfil }) {
     setError('')
     setTrabajando(que)
     try {
-      const lectura = await pedirPropuestas(clave!, perfil, await contenido())
+      const lectura = await pedirPropuestas(clave!, perfil, await contenido(), seccion)
       setResultado({ adjunto, lectura, estados: lectura.propuestas.map(() => ({ que: 'pendiente' })) })
     } catch (e) {
       setError(e instanceof ErrorIa ? e.message : 'Algo ha fallado. Vuelve a probar dentro de un rato.')

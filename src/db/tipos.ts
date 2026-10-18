@@ -73,6 +73,8 @@ export interface Medicamento extends RegistroBase {
   /** Cuánto se toma: "1 comprimido de 500 mg". */
   dosis?: string
   momentos: Momento[]
+  /** Horas de cada toma, «08:00». Si no hay, se usan las de los momentos (desayuno → 08:00…). */
+  horas?: string[]
   /** Si no encaja en los momentos: "cada 8 horas", "los lunes"… */
   otroHorario?: string
   paraQue?: string
@@ -122,6 +124,8 @@ export interface EntradaHistorial extends RegistroBase {
   resumen?: string
   /** Solo para diagnósticos: si es una enfermedad que dura (diabetes, hipertensión…). */
   cronica?: boolean
+  /** Medicación que le recetaron en esa visita, informe, urgencias… */
+  medicacion?: string[]
 }
 
 export type TipoConstante = 'tension' | 'pulso' | 'peso' | 'glucosa' | 'saturacion' | 'temperatura'
@@ -202,6 +206,7 @@ export const TABLAS_DE_PERFIL = [
   'ciclos',
   'ojos',
   'bajas',
+  'tomas',
 ] as const
 
 export type TablaDePerfil = (typeof TABLAS_DE_PERFIL)[number]
@@ -227,6 +232,8 @@ export interface TratamientoDental extends RegistroBase {
   /** Dientes con la numeración del dentista (11 a 48). Vacío = toda la boca. */
   dientes: number[]
   dentista?: string
+  /** Lo que se pagó, en euros (para comparar entre dentistas y saber lo que se lleva gastado). */
+  importe?: number
   notas?: string
 }
 
@@ -333,4 +340,14 @@ export interface Baja extends RegistroBase {
   confirmaciones: FechaISO[]
   tipoAlta?: TipoAlta
   notas?: string
+}
+
+/** Una toma de un medicamento marcada como «Tomada». */
+export interface Toma extends RegistroBase {
+  medicamentoId: string
+  /** Día y hora de la toma que tocaba («2026-10-18», «08:00»). */
+  fecha: FechaISO
+  hora: string
+  /** Cuándo se pulsó «Tomada». */
+  tomadaEn: number
 }

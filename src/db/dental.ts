@@ -5,13 +5,14 @@ import { borrarAdjuntosDe } from './adjuntos'
 import { db, nuevoId } from './db'
 import type { TratamientoDental } from './tipos'
 
-export type DatosDental = Pick<TratamientoDental, 'fecha' | 'tipo' | 'dientes' | 'dentista' | 'notas'>
+export type DatosDental = Pick<TratamientoDental, 'fecha' | 'tipo' | 'dientes' | 'dentista' | 'notas' | 'importe'>
 
 export function revisarDental(d: DatosDental): string | null {
   if (!esFechaValida(d.fecha)) return 'Pon la fecha, por favor.'
   if (d.dientes.some((n) => !esDiente(n))) return 'Hay algún diente que no existe.'
   const info = infoTipoDental(d.tipo)
   if (info.estado && d.dientes.length === 0) return 'Toca en el dibujo los dientes en los que te lo hicieron.'
+  if (d.importe !== undefined && (!Number.isFinite(d.importe) || d.importe < 0 || d.importe > 100000)) return 'El importe no parece correcto.'
   return null
 }
 
@@ -26,6 +27,7 @@ export async function guardarDental(perfilId: string, datos: DatosDental, id?: s
     dientes: infoTipoDental(datos.tipo).boca ? [] : [...new Set(datos.dientes)].sort((a, b) => a - b),
     dentista: texto(datos.dentista),
     notas: texto(datos.notas),
+    importe: datos.importe,
   }
   const ahora = Date.now()
   if (id) {
@@ -81,4 +83,27 @@ export function ultimaRevision(
 /** Dentistas y clínicas ya usados, para no tener que escribirlos otra vez. */
 export function dentistasUsados(lista: Pick<TratamientoDental, 'dentista'>[]): string[] {
   return [...new Set(lista.map((t) => t.dentista).filter((d): d is string => !!d))]
+}
+
+/** Lo pagado en el dentista: en total y en un año. */
+export function gastoDental(lista: Pick<TratamientoDental, 'fecha' | 'importe'>[], ano: number): { total: number; ano: number } {
+  const suma = (l: typeof lista) => l.reduce((s, t) => s + (t.importe ?? 0), 0)
+  return { total: suma(lista), ano: suma(lista.filter((t) => t.fecha.startsWith(String(ano)))) }
+}
+
+/**
+ * Lee un importe escrito a la española: «1.200», «1.200,50», «85,5», «85 €».
+ * Con punto y tres cifras detrás es de miles (en dinero no se usa el punto para decimales).
+ */
+export function leerImporte(texto: string): number | null {
+  const t = texto.replace(/€|eur(os)?/gi, '').replace(/\s/g, '')
+  if (!t) return null
+  if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+([.,]\d{1,2})?$/.test(t)) return NaN
+  if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(t)) return Number(t.replaceAll('.', '').replace(',', '.'))
+  return Number(t.replace(',', '.'))
+}
+
+/** «1.250,50 €» */
+export function euros(n: number): string {
+  return `${n.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`
 }

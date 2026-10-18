@@ -1,4 +1,5 @@
 // Bajas médicas: cada baja con sus partes de confirmación y su alta.
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
@@ -12,7 +13,7 @@ import { fechaLarga, hoyISO } from '../utils/fechas'
 const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`
 
 export function Bajas({ perfilId }: { perfilId: string }) {
-  const [editando, setEditando] = useState<Baja | null>()
+  const [editando, setEditando] = useState<Baja | null | undefined>(() => (pideNuevo() ? null : undefined))
   const [alta, setAlta] = useState<Baja>()
   const lista = useLiveQuery(() => listarBajas(perfilId), [perfilId])
   if (editando !== undefined) return <FormularioBaja perfilId={perfilId} baja={editando ?? undefined} onTerminar={() => setEditando(undefined)} />
@@ -129,7 +130,7 @@ function FormularioBaja(props: { perfilId: string; baja?: Baja; onTerminar: () =
   const [confirmaciones, setConfirmaciones] = useState<string[]>(b?.confirmaciones ?? [])
   const [tipoAlta, setTipoAlta] = useState<TipoAlta>(b?.tipoAlta ?? 'curacion')
   const [notas, setNotas] = useState(b?.notas ?? '')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 

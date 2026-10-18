@@ -23,7 +23,7 @@ describe('medicamentos', () => {
     expect(await db.medicamentos.get(id)).toMatchObject({
       nombre: 'Sintrom 4 mg',
       dosis: '1/4 de comprimido',
-      familia: 'Anticoagulante (para que la sangre no coagule)',
+      familia: 'Anticoagulante',
       activo: 1,
     })
   })

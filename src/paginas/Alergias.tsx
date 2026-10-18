@@ -1,3 +1,4 @@
+import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
 import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -19,7 +20,7 @@ const TIPOS: { valor: Alergia['tipo']; texto: string; icono: string; titulo: str
 /** Alergias e intolerancias, agrupadas por tipo. */
 export function Alergias({ perfilId }: { perfilId: string }) {
   const alergias = useLiveQuery(() => listarAlergias(perfilId), [perfilId])
-  const [editando, setEditando] = useState<Alergia | null>()
+  const [editando, setEditando] = useState<Alergia | null | undefined>(() => (pideNuevo() ? null : undefined))
 
   if (editando !== undefined) {
     return <FormularioAlergia perfilId={perfilId} alergia={editando ?? undefined} onTerminar={() => setEditando(undefined)} />
@@ -86,7 +87,7 @@ function FormularioAlergia(props: { perfilId: string; alergia?: Alergia; onTermi
   const [reaccion, setReaccion] = useState(alergia?.reaccion ?? '')
   const [desde, setDesde] = useState(alergia?.desde ?? '')
   const [error, setError] = useState('')
-  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
   const sugerencias =

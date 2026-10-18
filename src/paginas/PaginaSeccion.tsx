@@ -1,5 +1,6 @@
+import { AtajoDocumento } from '../componentes/AtajoDocumento'
 import { lazy, Suspense, type ComponentType } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import { FondoSeccion } from '../componentes/Banner'
 import { usePerfilActivo } from '../perfilActivo'
 import { buscarSeccion } from '../secciones'
@@ -24,6 +25,9 @@ const Ojos = cargar(() => import('./Ojos'), 'Ojos')
 const Bajas = cargar(() => import('./Bajas'), 'Bajas')
 
 /** El contenido de cada sección que ya está hecha. Las demás se ven "en construcción". */
+/** Secciones con el atajo de arriba para crear un registro con un informe, una foto o la voz. */
+const CON_ATAJO = ['medicacion', 'citas', 'historial', 'bajas', 'analisis', 'revisiones', 'dental', 'ojos', 'alergias']
+
 const CONTENIDO: Record<string, Contenido> = {
   alergias: Alergias,
   analisis: Analisis,
@@ -42,6 +46,8 @@ const CONTENIDO: Record<string, Contenido> = {
 
 export function PaginaSeccion() {
   const { clave } = useParams()
+  // Al llegar con ?nuevo=1 desde el atajo, la sección se vuelve a montar para abrir el formulario.
+  const { search } = useLocation()
   const ir = useNavigate()
   const { perfil } = usePerfilActivo()
   const seccion = buscarSeccion(clave)
@@ -64,7 +70,8 @@ export function PaginaSeccion() {
       </div>
       {Contenido ? (
         <Suspense fallback={<p className="texto-suave">Cargando…</p>}>
-          <Contenido perfilId={perfil.id} />
+          {CON_ATAJO.includes(seccion.clave) && <AtajoDocumento perfilId={perfil.id} seccion={seccion.clave} />}
+          <Contenido key={search} perfilId={perfil.id} />
         </Suspense>
       ) : (
         <p className="aviso">Esta sección está en construcción. Muy pronto podrás usarla.</p>

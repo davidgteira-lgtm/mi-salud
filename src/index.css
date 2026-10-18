@@ -637,3 +637,30 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .ojo-valores small { font-weight: 600; color: var(--texto-suave); font-size: 0.8rem; }
 .ojo-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ojo-campos .campo small { font-size: 0.75rem; }
+
+/* ---------- Tomas de la medicación ---------- */
+.hora-toma { display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--principal-claro); font-weight: 700; }
+.hora-toma .enlace { min-height: 36px; padding: 0 8px; text-decoration: none; }
+.toma { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--aviso-claro); border: 2px solid #e2c06a; }
+.toma-hecha { background: #e3f5e3; border-color: #7cc27c; }
+.toma-texto { font-size: 1.05rem; }
+.toma-boton {
+  min-height: 56px;
+  border-radius: 14px;
+  border: 2px solid var(--principal);
+  background: var(--superficie);
+  color: var(--principal-oscuro);
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.toma-hecha .toma-boton { background: #1e7a46; border-color: #1e7a46; color: #fff; }
+.panel-hoy { border: 2px solid var(--principal); }
+.panel-hoy .aviso { margin: 0; }
+.hoy-titulo { margin: 4px 0 0; font-size: 1.05rem; color: var(--principal-oscuro); }
+.panel-hoy:not(:has(> :not(h2))) { display: none; }
+/* Atajo de arriba de cada sección: los tres botones en una fila. */
+.atajo-documento .botones-adjuntos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.atajo-documento .botones-adjuntos .boton { flex-direction: column; gap: 2px; min-height: 64px; padding: 6px 4px; font-size: 0.9rem; width: 100%; }
+.tipo-registro { font-size: 0.95rem; color: var(--texto-suave); }

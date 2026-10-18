@@ -98,3 +98,23 @@ describe('guardar en la base de datos', () => {
     expect(estadoDeLosDientes(await listarDental(p.id)).get(16)).toBe('caries')
   })
 })
+
+describe('lo pagado en el dentista', () => {
+  it('lee importes escritos a la española', async () => {
+    const { leerImporte } = await import('./dental')
+    expect(leerImporte('85')).toBe(85)
+    expect(leerImporte('85,50 €')).toBe(85.5)
+    expect(leerImporte('1.200')).toBe(1200)
+    expect(leerImporte('1.200,50')).toBe(1200.5)
+    expect(leerImporte('')).toBeNull()
+    expect(leerImporte('mucho')).toBeNaN()
+  })
+
+  it('suma el total y lo de un año', async () => {
+    const { gastoDental } = await import('./dental')
+    expect(gastoDental([{ fecha: '2025-03-01', importe: 60 }, { fecha: '2026-02-01', importe: 450 }, { fecha: '2026-06-01' }], 2026)).toEqual({
+      total: 510,
+      ano: 450,
+    })
+  })
+})
