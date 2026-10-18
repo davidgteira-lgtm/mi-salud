@@ -77,6 +77,13 @@ export function Inicio() {
         </button>
       </header>
 
+      {perfil.ejemplo && (
+        <p className="aviso aviso-cita" role="note">
+          👀 <strong>Persona de ejemplo:</strong> todos sus datos son inventados. Para usar la app de verdad, pulsa «Cambiar persona» y
+          añade la tuya.
+        </p>
+      )}
+
       <Link to="/buscar" className="entrada-buscar">
         <span aria-hidden="true">🔎</span> Buscar en todo lo apuntado
       </Link>
@@ -84,7 +91,7 @@ export function Inicio() {
         <span aria-hidden="true">📄</span> Resumen para el médico
       </Link>
 
-      {!perfil.foto && <p className="aviso aviso-cita">📷 Toca la cámara de arriba para poner tu foto.</p>}
+      {!perfil.foto && !perfil.ejemplo && <p className="aviso aviso-cita">📷 Toca la cámara de arriba para poner tu foto.</p>}
 
       <AvisoProximasCitas perfilId={perfil.id} />
 

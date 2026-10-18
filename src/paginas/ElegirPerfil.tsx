@@ -1,7 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Avatar } from '../componentes/Avatar'
 import { listarPerfiles } from '../db/perfiles'
+import { crearEjemplos } from '../demo/ejemplo'
 import { usePerfilActivo } from '../perfilActivo'
 
 /** Primera pantalla: "¿Quién eres?" */
@@ -27,6 +29,7 @@ export function ElegirPerfil() {
         <button className="boton boton-secundario" onClick={() => ir('/ajustes/recuperar')}>
           Recuperar una copia de seguridad
         </button>
+        <BotonEjemplo />
       </main>
     )
   }
@@ -50,6 +53,33 @@ export function ElegirPerfil() {
       <button className="boton boton-secundario" onClick={() => ir('/persona/nueva')}>
         ➕ Añadir otra persona
       </button>
+      {!perfiles.some((p) => p.ejemplo) && <BotonEjemplo />}
     </main>
+  )
+}
+
+/** Ver la app llena de datos inventados, para conocerla (o enseñarla) sin escribir nada. */
+function BotonEjemplo() {
+  const { elegir } = usePerfilActivo()
+  const ir = useNavigate()
+  const [creando, setCreando] = useState(false)
+  return (
+    <div className="pila" style={{ gap: 6, marginTop: 8 }}>
+      <button
+        className="boton boton-secundario"
+        disabled={creando}
+        onClick={async () => {
+          setCreando(true)
+          const id = await crearEjemplos()
+          elegir(id)
+          ir('/inicio')
+        }}
+      >
+        {creando ? 'Preparando…' : '👀 Ver con datos de ejemplo'}
+      </button>
+      <small className="texto-suave" style={{ textAlign: 'center' }}>
+        Crea dos personas inventadas para que veas cómo funciona todo. Se pueden borrar en Ajustes.
+      </small>
+    </div>
   )
 }

@@ -293,6 +293,16 @@ describe('la app', () => {
     expect(within(ficha).getByRole('link', { name: 'Llamar a Lucía' })).toHaveAttribute('href', 'tel:600000000')
   })
 
+  it('con un toque se ve la app llena de datos de ejemplo', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: /Ver con datos de ejemplo/ }))
+    expect(await screen.findByRole('heading', { name: 'Hola, Rosa (ejemplo)' }, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.getByRole('note')).toHaveTextContent('todos sus datos son inventados')
+    // La cita de cardiología de dentro de 3 días sale avisada en el inicio.
+    expect(await screen.findByRole('link', { name: /En 3 días.*Cardiología/ })).toBeInTheDocument()
+  })
+
   it('pega el texto de un informe y guarda los resultados', async () => {
     const usuario = userEvent.setup()
     render(<App />)

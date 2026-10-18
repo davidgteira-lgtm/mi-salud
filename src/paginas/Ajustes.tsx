@@ -1,3 +1,4 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { AjustesIa } from '../componentes/AjustesIa'
@@ -15,6 +16,7 @@ import {
 } from '../copia/copia'
 import { apuntarCopiaHecha } from '../copia/recordatorio'
 import { db } from '../db/db'
+import { borrarEjemplos, hayEjemplos } from '../demo/ejemplo'
 import { usePerfilActivo } from '../perfilActivo'
 
 export function Ajustes() {
@@ -42,6 +44,7 @@ export function Ajustes() {
       )}
 
       {apartado !== 'recuperar' && <AjustesIa />}
+      {apartado !== 'recuperar' && <BorrarEjemplos />}
 
       <section className="tarjeta">
         <h2>🔒 ¿Dónde están mis datos?</h2>
@@ -50,8 +53,7 @@ export function Ajustes() {
           con la IA (si la activas).
         </p>
         <p style={{ margin: 0 }}>
-          Por eso es importante hacer copias de seguridad: si pierdes el móvil o se rompe, con la copia lo recuperas
-          todo en otro.
+          Por eso es importante hacer copias de seguridad: si pierdes el móvil o se rompe, con la copia lo recuperas todo en otro.
         </p>
       </section>
     </main>
@@ -240,8 +242,8 @@ function RecuperarCopia() {
       {copia && (
         <Confirmar titulo="¿Recuperar esta copia?" textoSi="Sí, recuperar" onSi={recuperar} onNo={() => setCopia(undefined)}>
           <p>
-            Copia del <strong>{new Date(copia.creadaEn).toLocaleDateString('es-ES', { dateStyle: 'long' })}</strong> con
-            los datos de: <strong>{personasDeCopia(copia).join(', ') || 'nadie'}</strong>.
+            Copia del <strong>{new Date(copia.creadaEn).toLocaleDateString('es-ES', { dateStyle: 'long' })}</strong> con los datos de:{' '}
+            <strong>{personasDeCopia(copia).join(', ') || 'nadie'}</strong>.
           </p>
           <p>Si alguno de esos datos ya está en este móvil, se cambiará por el de la copia. Lo demás no se toca.</p>
         </Confirmar>
@@ -272,4 +274,41 @@ async function compartirOdescargar(archivo: Blob, nombre: string): Promise<boole
   enlace.click()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
   return true
+}
+
+/** Borrar las personas de ejemplo (las de verdad no se tocan). */
+function BorrarEjemplos() {
+  const hay = useLiveQuery(hayEjemplos)
+  const { perfil, elegir } = usePerfilActivo()
+  const ir = useNavigate()
+  const [preguntar, setPreguntar] = useState(false)
+  if (!hay) return null
+  return (
+    <section className="tarjeta pila" aria-label="Personas de ejemplo">
+      <h2>👀 Personas de ejemplo</h2>
+      <p style={{ margin: 0 }}>Rosa y Lucía (ejemplo) tienen datos inventados para enseñar la app. Puedes borrarlas cuando quieras.</p>
+      <button className="boton boton-secundario" onClick={() => setPreguntar(true)}>
+        Borrar las personas de ejemplo
+      </button>
+      {preguntar && (
+        <Confirmar
+          titulo="¿Borrar las personas de ejemplo?"
+          textoSi="Sí, borrarlas"
+          peligroso
+          onSi={async () => {
+            const eraEjemplo = !!perfil?.ejemplo
+            await borrarEjemplos()
+            setPreguntar(false)
+            if (eraEjemplo) {
+              elegir(null)
+              ir('/')
+            }
+          }}
+          onNo={() => setPreguntar(false)}
+        >
+          <p>Las personas de verdad y sus datos no se tocan.</p>
+        </Confirmar>
+      )}
+    </section>
+  )
 }

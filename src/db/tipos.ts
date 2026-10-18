@@ -15,6 +15,8 @@ export interface Perfil {
   sexo?: Sexo
   /** Si quiere llevar el control de la regla (si no se ha dicho, sí para las mujeres). */
   apuntarRegla?: boolean
+  /** Persona de ejemplo, con datos inventados (para enseñar la app). */
+  ejemplo?: boolean
   /** Revisiones y vacunas de la lista que ha quitado porque no le tocan. */
   revisionesOcultas?: string[]
   /** Revisiones que le ha mandado su médico (por ejemplo, el cardiólogo cada año). */
