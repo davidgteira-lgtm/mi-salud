@@ -73,9 +73,12 @@ export function Bajas({ perfilId }: { perfilId: string }) {
               )}
               {tipoAlta && <span>Alta por: {tipoAlta.texto.toLowerCase()}</span>}
               {b.notas && <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{b.notas}</p>}
-              <VerAdjuntos registroId={b.id} />
+              <VerAdjuntos registroId={b.id} titulo="Partes e informes" />
+              <button className="boton boton-secundario" onClick={() => setEditando(b)}>
+                📎 Añadir partes o informes
+              </button>
               <button className="enlace" onClick={() => setEditando(b)}>
-                Cambiar, añadir partes o borrar
+                Cambiar o borrar
               </button>
             </article>
           )

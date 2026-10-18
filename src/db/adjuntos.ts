@@ -35,7 +35,8 @@ export async function guardarAdjuntos(perfilId: string, registroId: string, nuev
   if (nuevos.length === 0) return
   const ahora = Date.now()
   await db.adjuntos.bulkAdd(
-    nuevos.map((n) => ({
+    // Un milisegundo de diferencia entre uno y otro: así se ven en el orden en que se añadieron.
+    nuevos.map((n, i) => ({
       id: nuevoId(),
       perfilId,
       registroId,
@@ -44,7 +45,7 @@ export async function guardarAdjuntos(perfilId: string, registroId: string, nuev
       archivo: n.archivo,
       transcripcion: n.transcripcion,
       analisis: n.leido ? ('hecho' as const) : ('pendiente' as const),
-      creadoEn: ahora,
+      creadoEn: ahora + i,
       actualizadoEn: ahora,
     })),
   )

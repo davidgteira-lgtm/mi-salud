@@ -174,11 +174,17 @@ export function MiniaturaAdjunto({ tipo, nombre, archivo }: { tipo: Adjunto['tip
 }
 
 /** Solo para ver (en las tarjetas): los adjuntos de un registro. */
-export function VerAdjuntos({ registroId }: { registroId: string }) {
+/** Los archivos de un registro. Con `titulo`, se pone encima («Partes e informes (3)»). */
+export function VerAdjuntos({ registroId, titulo }: { registroId: string; titulo?: string }) {
   const lista = useLiveQuery(() => listarAdjuntos(registroId), [registroId])
   if (!lista?.length) return null
   return (
-    <ul className="lista-adjuntos">
+    <ul className="lista-adjuntos" aria-label={titulo}>
+      {titulo && (
+        <li className="texto-suave" style={{ fontWeight: 700 }}>
+          📎 {titulo} ({lista.length})
+        </li>
+      )}
       {lista.map((a) => (
         <li key={a.id} className="fila-adjunto">
           <MiniaturaAdjunto tipo={a.tipo} nombre={a.nombre} archivo={a.archivo} />

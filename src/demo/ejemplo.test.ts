@@ -111,3 +111,32 @@ describe('tomas y bajas de Rosa', () => {
     expect(bajas.every((b) => b.fin)).toBe(true)
   })
 })
+
+describe('documentos de los ejemplos', () => {
+  it('cada baja tiene su parte de baja, los de confirmación y el de alta; y hay informes que abrir', async () => {
+    const rosaId = await crearEjemplos(HOY)
+    const bajas = await db.bajas.where('perfilId').equals(rosaId).toArray()
+    for (const b of bajas) {
+      const docs = (await db.adjuntos.where('registroId').equals(b.id).toArray()).map((a) => a.nombre)
+      expect(docs.some((n) => n.startsWith('Parte de baja'))).toBe(true)
+      expect(docs.filter((n) => n.startsWith('Parte de confirmación'))).toHaveLength(b.confirmaciones.length)
+      expect(docs.some((n) => n.startsWith('Parte de alta'))).toBe(!!b.fin)
+    }
+    const pdf = (await db.adjuntos.where('perfilId').equals(rosaId).first())!
+    expect(pdf.archivo.type).toBe('application/pdf')
+    expect(pdf.analisis).toBe('hecho')
+    const historial = await db.historial.where('perfilId').equals(rosaId).toArray()
+    expect(historial.filter((h) => h.medicacion?.length).length).toBeGreaterThanOrEqual(4)
+  })
+})
+
+describe('facturas del dentista', () => {
+  it('cada tratamiento pagado tiene su factura; las revisiones y la caries pendiente, no', async () => {
+    const rosaId = await crearEjemplos(HOY)
+    for (const t of await db.dental.where('perfilId').equals(rosaId).toArray()) {
+      const docs = (await db.adjuntos.where('registroId').equals(t.id).toArray()).map((a) => a.nombre)
+      const conFactura = docs.some((n) => n.startsWith('Factura'))
+      expect(conFactura, t.tipo).toBe(t.tipo !== 'revision' && t.tipo !== 'caries')
+    }
+  })
+})

@@ -1,3 +1,4 @@
+import { db } from '../db/db'
 import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
@@ -9,6 +10,7 @@ import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import {
   borrarDental,
   dentistasUsados,
+  llevaFactura,
   euros,
   gastoDental,
   leerImporte,
@@ -134,6 +136,8 @@ export function Dental({ perfilId }: { perfilId: string }) {
 
 function TarjetaDental({ tratamiento: t, onCambiar }: { tratamiento: TratamientoDental; onCambiar: () => void }) {
   const info = infoTipoDental(t.tipo)
+  const conFactura = llevaFactura(t.tipo)
+  const archivos = useLiveQuery(() => db.adjuntos.where('registroId').equals(t.id).count(), [t.id])
   return (
     <article className="tarjeta pila" style={{ gap: 6 }}>
       <strong style={{ fontSize: '1.2rem' }}>
@@ -152,7 +156,12 @@ function TarjetaDental({ tratamiento: t, onCambiar }: { tratamiento: Tratamiento
       {t.dentista && <span>📍 {t.dentista}</span>}
       {t.importe !== undefined && <span>💶 {euros(t.importe)}</span>}
       {t.notas && <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{t.notas}</p>}
-      <VerAdjuntos registroId={t.id} />
+      <VerAdjuntos registroId={t.id} titulo={conFactura ? 'Factura y documentos' : 'Documentos'} />
+      {conFactura && archivos === 0 && (
+        <button className="boton boton-secundario" onClick={onCambiar}>
+          🧾 Subir la factura
+        </button>
+      )}
       <button className="enlace" onClick={onCambiar}>
         Cambiar o borrar
       </button>

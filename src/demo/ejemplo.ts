@@ -1,6 +1,7 @@
 // Personas de ejemplo con datos INVENTADOS, para enseñar la app (por ejemplo, al jurado)
 // sin usar datos de nadie. Las fechas van en relación con el día de hoy, para que
 // las citas próximas sigan siendo próximas y las vacunas «toquen» cuando se mire.
+import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { guardarAlergia } from '../db/alergias'
 import { guardarAnalitica } from '../db/analiticas'
 import { guardarCiclo } from '../db/ciclos'
@@ -8,7 +9,8 @@ import { guardarCita } from '../db/citas'
 import { guardarMedida } from '../db/constantes'
 import { guardarDatos } from '../db/datosSanitarios'
 import { db } from '../db/db'
-import { guardarDental } from '../db/dental'
+import { guardarDental, llevaFactura } from '../db/dental'
+import { infoTipoDental, nombreDiente } from '../datos/dientes'
 import { guardarBaja } from '../db/bajas'
 import { guardarHistorial } from '../db/historial'
 import { dejarDeTomar, guardarMedicamento } from '../db/medicamentos'
@@ -17,10 +19,11 @@ import { borrarPerfil, crearPerfil } from '../db/perfiles'
 import { marcarTomada } from '../db/tomas'
 import { guardarPropia, guardarRegistro } from '../db/revisiones'
 import { guardarContacto } from '../db/telefonos'
-import type { FechaISO, ResultadoAnalisis, RevisionOcular } from '../db/tipos'
+import type { Baja, FechaISO, ResultadoAnalisis, RevisionOcular } from '../db/tipos'
 import { buscarPrueba } from '../utils/analisis'
 import { sumarDias } from '../utils/ciclos'
 import { hoyISO } from '../utils/fechas'
+import { crearPdf, fechaEs, type LineaPdf } from './pdfFalso'
 
 /** Números «al azar» pero siempre los mismos, para que el ejemplo no cambie cada vez. */
 function azar(semilla: number) {
@@ -51,7 +54,9 @@ export async function crearEjemplos(hoy: FechaISO = hoyISO()): Promise<string> {
   const dia = (n: number) => sumarDias(hoy, n)
   const ano = Number(hoy.slice(0, 4))
   const rosa = await crearRosa(dia, ano)
-  await crearLucia(dia, ano)
+  const lucia = await crearLucia(dia, ano)
+  // Documentos inventados unidos a sus registros, para poder abrirlos.
+  for (const id of [rosa, lucia]) await adjuntarDocumentos(id)
   return rosa
 }
 
@@ -149,12 +154,15 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   })
   await dejarDeTomar(omeprazol, dia(-121))
 
-
   // Tomas: los días pasados, casi todo «Tomada» (una se le olvidó). Hoy, lo que ya tocaba, salvo la metformina.
   const ahora = new Date()
   const horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
   const hoyReal = hoyISO(ahora)
-  for (const med of await db.medicamentos.where('perfilId').equals(id).filter((m) => m.activo === 1).toArray()) {
+  for (const med of await db.medicamentos
+    .where('perfilId')
+    .equals(id)
+    .filter((m) => m.activo === 1)
+    .toArray()) {
     for (const hora of med.horas ?? []) {
       for (let n = -3; n <= 0; n++) {
         const fecha = sumarDias(hoyReal, n)
@@ -245,6 +253,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     fecha: `${ano - 14}-05-02`,
     tipo: 'diagnostico',
     titulo: 'Hipertensión arterial',
+    medicacion: ['Enalapril 20 mg'],
     especialidad: 'Medicina de familia',
     cronica: true,
   })
@@ -252,6 +261,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     fecha: `${ano - 8}-01-10`,
     tipo: 'diagnostico',
     titulo: 'Diabetes tipo 2',
+    medicacion: ['Metformina 850 mg'],
     especialidad: 'Endocrinología',
     cronica: true,
   })
@@ -259,6 +269,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     fecha: `${ano - 6}-03-15`,
     tipo: 'diagnostico',
     titulo: 'Fibrilación auricular (arritmia)',
+    medicacion: ['Sintrom 4 mg'],
     especialidad: 'Cardiología',
     cronica: true,
   })
@@ -266,6 +277,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     fecha: `${ano - 5}-06-20`,
     tipo: 'operacion',
     titulo: 'Prótesis de cadera derecha',
+    medicacion: ['Paracetamol 1 g', 'Enoxaparina 40 mg (inyección)'],
     especialidad: 'Traumatología',
     centro: 'Hospital Ejemplo',
     resumen: 'Le pusieron una prótesis por desgaste. Salió bien; rehabilitación de 2 meses.',
@@ -416,9 +428,27 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   if (cardio) await guardarRegistro(id, { tipo: 'revision', clave: cardio.clave, nombre: cardio.nombre, fecha: dia(-182) })
 
   // Dentista.
-  await guardarDental(id, { fecha: `${ano - 11}-04-10`, tipo: 'extraccion', dientes: [38, 48], dentista: 'Clínica Dental Ejemplo', importe: 120 })
-  await guardarDental(id, { fecha: `${ano - 6}-02-15`, tipo: 'empaste', dientes: [16, 26, 36], dentista: 'Clínica Dental Ejemplo', importe: 165 })
-  await guardarDental(id, { fecha: `${ano - 3}-11-20`, tipo: 'endodoncia', dientes: [46], dentista: 'Clínica Dental Ejemplo', importe: 180 })
+  await guardarDental(id, {
+    fecha: `${ano - 11}-04-10`,
+    tipo: 'extraccion',
+    dientes: [38, 48],
+    dentista: 'Clínica Dental Ejemplo',
+    importe: 120,
+  })
+  await guardarDental(id, {
+    fecha: `${ano - 6}-02-15`,
+    tipo: 'empaste',
+    dientes: [16, 26, 36],
+    dentista: 'Clínica Dental Ejemplo',
+    importe: 165,
+  })
+  await guardarDental(id, {
+    fecha: `${ano - 3}-11-20`,
+    tipo: 'endodoncia',
+    dientes: [46],
+    dentista: 'Clínica Dental Ejemplo',
+    importe: 180,
+  })
   await guardarDental(id, { fecha: `${ano - 2}-01-12`, tipo: 'corona', dientes: [46], dentista: 'Clínica Dental Ejemplo', importe: 390 })
   await guardarDental(id, { fecha: `${ano - 2}-06-03`, tipo: 'implante', dientes: [38], dentista: 'Clínica Dental Ejemplo', importe: 1150 })
   await guardarDental(id, { fecha: dia(-420), tipo: 'limpieza', dientes: [], dentista: 'Clínica Dental Ejemplo', importe: 55 })
@@ -439,7 +469,6 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   })
   await guardarContacto(id, { tipo: 'hospital', nombre: 'Hospital Ejemplo (citas)', telefono: '910 000 001' })
   await guardarContacto(id, { tipo: 'farmacia', nombre: 'Farmacia Ejemplo', telefono: '910 000 002' })
-
 
   // Vista: hipermetropía y vista cansada que suben; en la última, la presión del ojo algo alta.
   await guardarOcular(id, {
@@ -554,7 +583,7 @@ async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<st
     fecha: dia(-760),
     notas: 'Todo normal.',
   })
-  await guardarDental(id, { fecha: dia(-150), tipo: 'limpieza', dientes: [] })
+  await guardarDental(id, { fecha: dia(-150), tipo: 'limpieza', dientes: [], dentista: 'Clínica Dental Ejemplo', importe: 50 })
 
   // Vista: miopía que ha ido subiendo con los años.
   const miopia: [number, number, number, RevisionOcular['tipo']][] = [
@@ -608,4 +637,172 @@ async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<st
     confirmaciones: [],
   })
   return id
+}
+
+// ---------- Documentos inventados (partes de baja, informes) ----------
+
+const TIPO_BAJA_TEXTO: Record<string, string> = {
+  comun: 'Enfermedad común',
+  'accidente-no-laboral': 'Accidente no laboral',
+  'accidente-laboral': 'Accidente de trabajo',
+  'enfermedad-profesional': 'Enfermedad profesional',
+}
+
+/** Parte de baja, de confirmación o de alta, con la forma de los de verdad (y bien marcado como ejemplo). */
+function parte(tipo: 'baja' | 'confirmacion' | 'alta', paciente: string, b: Baja, fecha: string, numero = 1): Blob {
+  const titulo = { baja: 'PARTE MÉDICO DE BAJA', confirmacion: `PARTE MÉDICO DE CONFIRMACIÓN N.º ${numero}`, alta: 'PARTE MÉDICO DE ALTA' }[
+    tipo
+  ]
+  const lineas: LineaPdf[] = [
+    [50, 780, 14, `${titulo} DE INCAPACIDAD TEMPORAL`, true],
+    [50, 762, 9, 'Modelo de ejemplo (copia para la persona trabajadora)'],
+    [50, 730, 10, `Trabajador/a: ${paciente.toUpperCase()}`],
+    [50, 715, 10, `Empresa: ${(b.empresa ?? 'EMPRESA EJEMPLO').toUpperCase()}`],
+    [50, 690, 10, `Fecha de la baja: ${fechaEs(b.inicio)}`],
+    [50, 675, 10, `Contingencia: ${(TIPO_BAJA_TEXTO[b.tipo] ?? b.tipo).toLowerCase()}`],
+    [50, 660, 10, `Diagnóstico: ${(b.diagnostico ?? b.motivo).toLowerCase()}`],
+  ]
+  if (tipo === 'confirmacion') {
+    lineas.push([50, 635, 10, `Fecha de este parte: ${fechaEs(fecha)}`], [50, 620, 10, 'Continúa en situación de incapacidad temporal.'])
+  }
+  if (tipo === 'alta') {
+    const motivo = {
+      curacion: 'curación',
+      mejoria: 'mejoría que permite trabajar',
+      inspeccion: 'inspección médica',
+      incapacidad: 'propuesta de incapacidad permanente',
+      otra: 'otro motivo',
+    }[b.tipoAlta ?? 'curacion']
+    lineas.push(
+      [50, 635, 10, `Fecha del alta: ${fechaEs(fecha)}`, true],
+      [50, 620, 10, `Motivo del alta: ${motivo}`],
+      [50, 605, 10, 'Se incorpora a su trabajo al día siguiente.'],
+    )
+  }
+  lineas.push([50, 570, 10, `Médico: ${b.medico ?? 'Dra. Ejemplo'} - ${b.centro ?? 'Centro de Salud Ejemplo'}`])
+  return crearPdf(lineas)
+}
+
+/** Un informe de texto sencillo (radiografía, análisis…). */
+function informe(titulo: string, centro: string, paciente: string, fecha: string, cuerpo: string[]): Blob {
+  return crearPdf([
+    [50, 780, 14, titulo, true],
+    [50, 762, 9, centro],
+    [50, 730, 10, `Paciente: ${paciente.toUpperCase()}`],
+    [50, 715, 10, `Fecha: ${fechaEs(fecha)}`],
+    ...cuerpo.map((t, i): LineaPdf => [50, 685 - i * 16, 10, t]),
+  ])
+}
+
+const pdf = (nombre: string, archivo: Blob): AdjuntoNuevo => ({
+  clave: crypto.randomUUID(),
+  tipo: 'documento',
+  nombre,
+  archivo,
+  leido: true,
+})
+
+async function adjuntarDocumentos(perfilId: string): Promise<void> {
+  const paciente = (await db.perfiles.get(perfilId))?.nombre.replace(' (ejemplo)', '') ?? 'Persona de ejemplo'
+
+  for (const b of await db.bajas.where('perfilId').equals(perfilId).toArray()) {
+    const docs = [pdf(`Parte de baja ${fechaEs(b.inicio)}.pdf`, parte('baja', paciente, b, b.inicio))]
+    b.confirmaciones.forEach((c, i) =>
+      docs.push(pdf(`Parte de confirmación ${i + 1} ${fechaEs(c)}.pdf`, parte('confirmacion', paciente, b, c, i + 1))),
+    )
+    if (b.fin) docs.push(pdf(`Parte de alta ${fechaEs(b.fin)}.pdf`, parte('alta', paciente, b, b.fin)))
+    await guardarAdjuntos(perfilId, b.id, docs)
+  }
+
+  const historial = await db.historial.where('perfilId').equals(perfilId).toArray()
+  const rodilla = historial.find((h) => h.titulo === 'Radiografía de rodilla')
+  if (rodilla) {
+    await guardarAdjuntos(perfilId, rodilla.id, [
+      pdf(
+        'Informe radiografía de rodilla.pdf',
+        informe('SERVICIO DE RADIODIAGNÓSTICO', 'Hospital Ejemplo', paciente, rodilla.fecha, [
+          'Estudio: radiografía de rodilla derecha, proyecciones AP y lateral.',
+          'Disminución leve del espacio articular femorotibial interno.',
+          'Pequeños osteofitos marginales. No se observan fracturas.',
+          'Conclusión: gonartrosis leve (artrosis de rodilla leve).',
+        ]),
+      ),
+    ])
+  }
+  const eco = historial.find((h) => h.titulo === 'Ecocardiograma')
+  if (eco) {
+    await guardarAdjuntos(perfilId, eco.id, [
+      pdf(
+        'Informe ecocardiograma.pdf',
+        informe('CARDIOLOGÍA - ECOCARDIOGRAMA', 'Hospital Ejemplo', paciente, eco.fecha, [
+          'Ventrículo izquierdo de tamaño y función normales (FEVI 60 %).',
+          'Aurícula izquierda ligeramente dilatada.',
+          'Válvulas sin alteraciones relevantes.',
+          'Conclusión: hallazgos compatibles con fibrilación auricular conocida.',
+        ]),
+      ),
+    ])
+  }
+
+  const ultima = (await db.analiticas.where('perfilId').equals(perfilId).toArray()).sort((a, b) => b.fecha.localeCompare(a.fecha))[0]
+  if (ultima) {
+    const filas = ultima.resultados.map(
+      (r) =>
+        `${r.nombre.padEnd(34, ' ')} ${String(r.valor).replace('.', ',')} ${r.unidad ?? ''}${
+          r.refMin !== undefined || r.refMax !== undefined ? `   (${r.refMin ?? ''} - ${r.refMax ?? ''})` : ''
+        }`,
+    )
+    await guardarAdjuntos(perfilId, ultima.id, [
+      pdf(
+        `Análisis ${fechaEs(ultima.fecha)}.pdf`,
+        informe('LABORATORIO DE EJEMPLO - ANÁLISIS', ultima.centro ?? 'Laboratorio Ejemplo', paciente, ultima.fecha, filas),
+      ),
+    ])
+  }
+
+  // Facturas del dentista: una por cada tratamiento pagado.
+  const dental = (await db.dental.where('perfilId').equals(perfilId).toArray()).sort((a, b) => a.fecha.localeCompare(b.fecha))
+  let numero = 0
+  for (const t of dental.filter((x) => llevaFactura(x.tipo))) {
+    numero++
+    const concepto = CONCEPTO_FACTURA[t.tipo] ?? infoTipoDental(t.tipo).texto
+    const dientes = t.dientes.map((n) => `${nombreDiente(n).toLowerCase()} (${n})`)
+    const importe = t.importe ?? 0
+    const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} EUR`
+    const factura = crearPdf(
+      [
+        [50, 780, 15, (t.dentista ?? 'Clínica Dental Ejemplo').toUpperCase(), true],
+        [50, 763, 9, 'Calle Ejemplo, 1 - 00000 Ciudad Ejemplo - CIF B00000000 (ejemplo)'],
+        [380, 780, 12, 'FACTURA', true],
+        [380, 763, 9, `N.º EJ-${t.fecha.slice(0, 4)}-${String(numero).padStart(4, '0')}`],
+        [380, 750, 9, `Fecha: ${fechaEs(t.fecha)}`],
+        [50, 720, 10, `Paciente: ${paciente.toUpperCase()}`],
+        [50, 690, 10, 'Concepto', true],
+        [450, 690, 10, 'Importe', true],
+        [50, 672, 10, concepto],
+        [450, 672, 10, euros(importe)],
+        ...dientes.map((d, i): LineaPdf => [62, 656 - i * 14, 9, `- ${d}`]),
+        [50, 600, 9, 'Exento de IVA (servicios de asistencia sanitaria, art. 20.Uno.3.º Ley 37/1992).'],
+        [330, 570, 12, `TOTAL: ${euros(importe)}`, true],
+        [50, 540, 9, 'Forma de pago: tarjeta.'],
+      ],
+      [
+        [50, 684, 545, 684],
+        [330, 585, 545, 585],
+      ],
+    )
+    await guardarAdjuntos(perfilId, t.id, [pdf(`Factura ${concepto.toLowerCase()} ${fechaEs(t.fecha)}.pdf`, factura)])
+  }
+}
+
+/** Cómo se escribe cada tratamiento en una factura. */
+const CONCEPTO_FACTURA: Partial<Record<string, string>> = {
+  extraccion: 'Extracción dental',
+  empaste: 'Empaste',
+  endodoncia: 'Endodoncia',
+  corona: 'Funda o corona',
+  implante: 'Implante dental',
+  limpieza: 'Limpieza dental',
+  protesis: 'Dentadura postiza',
+  ortodoncia: 'Ortodoncia',
 }

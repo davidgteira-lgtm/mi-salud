@@ -107,3 +107,8 @@ export function leerImporte(texto: string): number | null {
 export function euros(n: number): string {
   return `${n.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`
 }
+
+/** Lo que se paga en el dentista lleva factura; las revisiones y el aviso de caries, no. */
+export function llevaFactura(tipo: TratamientoDental['tipo']): boolean {
+  return tipo !== 'revision' && tipo !== 'caries'
+}
