@@ -556,11 +556,30 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 /* Texto que solo leen los lectores de pantalla. */
 .solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---- Lectura en voz alta: una franja arriba del todo en cada pantalla, sin tapar nada ---- */
-.lector-voz {
+/* ---- Barra de arriba: el logo a la izquierda y la lectura en voz alta a la derecha, sin tapar nada ---- */
+.barra-superior {
   max-width: 640px;
   margin: 0 auto;
   padding: max(10px, env(safe-area-inset-top)) 16px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  text-decoration: none;
+  color: var(--principal-oscuro);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.logo img { display: block; border-radius: 10px; }
+.lector-voz {
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -584,7 +603,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .lector-boton span { font-size: 1.25rem; line-height: 1; }
 .lector-activo { background: #1e7a46; border-color: #1e7a46; color: #fff; }
 /* La barra ya deja el margen de arriba (también el de la «muesca» del móvil). */
-.lector-voz + .pagina, .lector-voz + main { padding-top: 12px; }
+.barra-superior + .pagina, .barra-superior + main { padding-top: 12px; }
 
 /* ---------- Mis datos y ficha de emergencia ---------- */
 .dato { display: flex; flex-direction: column; gap: 2px; }
@@ -612,7 +631,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 /* Al imprimir (o guardar en PDF) solo sale lo que se imprime. */
 @media print {
   body { background: #fff; }
-  .lector-voz, .boton-volver, .no-imprimir, .cabecera-seccion { display: none !important; }
+  .barra-superior, .lector-voz, .boton-volver, .no-imprimir, .cabecera-seccion { display: none !important; }
   .pagina { padding: 0; max-width: none; }
   .tarjeta, .emergencia { box-shadow: none; break-inside: avoid; }
   a { color: inherit; text-decoration: none; }
@@ -664,3 +683,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .atajo-documento .botones-adjuntos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .atajo-documento .botones-adjuntos .boton { flex-direction: column; gap: 2px; min-height: 64px; padding: 6px 4px; font-size: 0.9rem; width: 100%; }
 .tipo-registro { font-size: 0.95rem; color: var(--texto-suave); }
+
+/* ---------- Pasos para activar la IA ---------- */
+.pasos-ia { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 10px; }
+.pasos-ia code { background: var(--principal-claro); padding: 0 4px; border-radius: 4px; }
+details > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }

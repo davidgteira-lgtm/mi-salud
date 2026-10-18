@@ -15,7 +15,20 @@ export const MOMENTOS: { valor: Momento; texto: string; icono: string }[] = [
 
 export type DatosMedicamento = Pick<
   Medicamento,
-  'nombre' | 'dosis' | 'momentos' | 'horas' | 'otroHorario' | 'paraQue' | 'familia' | 'fechaInicio' | 'fechaFin' | 'activo' | 'notas'
+  | 'nombre'
+  | 'dosis'
+  | 'momentos'
+  | 'horas'
+  | 'otroHorario'
+  | 'paraQue'
+  | 'familia'
+  | 'fechaInicio'
+  | 'fechaFin'
+  | 'activo'
+  | 'notas'
+  | 'valoracion'
+  | 'efectos'
+  | 'motivoFin'
 >
 
 export function revisarMedicamento(datos: DatosMedicamento): string | null {
@@ -45,6 +58,9 @@ export async function guardarMedicamento(perfilId: string, datos: DatosMedicamen
     fechaFin: datos.activo ? undefined : datos.fechaFin || undefined,
     activo: datos.activo,
     notas: texto(datos.notas),
+    valoracion: datos.valoracion || undefined,
+    efectos: texto(datos.efectos),
+    motivoFin: datos.activo ? undefined : datos.motivoFin || undefined,
   }
   const ahora = Date.now()
   if (id) {
@@ -57,15 +73,34 @@ export async function guardarMedicamento(perfilId: string, datos: DatosMedicamen
 }
 
 /** "Ya no lo tomo": pasa al historial con la fecha de hoy (o la indicada). */
-export async function dejarDeTomar(id: string, fecha: string = hoyISO()): Promise<void> {
-  await db.medicamentos.update(id, { activo: 0, fechaFin: fecha, actualizadoEn: Date.now() })
+export async function dejarDeTomar(
+  id: string,
+  fecha: string = hoyISO(),
+  como: Pick<Medicamento, 'valoracion' | 'motivoFin'> = {},
+): Promise<void> {
+  await db.medicamentos.update(id, {
+    activo: 0,
+    fechaFin: fecha,
+    ...(como.valoracion && { valoracion: como.valoracion }),
+    ...(como.motivoFin && { motivoFin: como.motivoFin }),
+    actualizadoEn: Date.now(),
+  })
 }
 
 /** "Lo vuelvo a tomar": crea una toma nueva desde hoy y deja la anterior en el historial. */
 export async function volverATomar(id: string, fecha: string = hoyISO()): Promise<string> {
   const anterior = await db.medicamentos.get(id)
   if (!anterior) throw new Error('No se encuentra el medicamento')
-  return guardarMedicamento(anterior.perfilId, { ...anterior, fechaInicio: fecha, fechaFin: undefined, activo: 1 })
+  // Lo de qué tal le fue y por qué lo dejó se queda en la toma anterior.
+  return guardarMedicamento(anterior.perfilId, {
+    ...anterior,
+    fechaInicio: fecha,
+    fechaFin: undefined,
+    activo: 1,
+    valoracion: undefined,
+    efectos: undefined,
+    motivoFin: undefined,
+  })
 }
 
 /** Lo borra junto con sus fotos y documentos. */

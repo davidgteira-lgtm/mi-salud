@@ -26,6 +26,43 @@ import type { TipoDental, TratamientoDental } from '../db/tipos'
 import { fechaLarga, hoyISO, mesYAno } from '../utils/fechas'
 import { normalizar } from '../utils/texto'
 
+/** Lo pagado en el dentista: el total desde que se apunta, o lo de un año que se elige. */
+function GastoDental({ lista }: { lista: TratamientoDental[] }) {
+  const [ano, setAno] = useState<string>('')
+  const { total, porAno } = gastoDental(lista)
+  if (total === 0) return null
+  const elegido = porAno.find((a) => a.ano === ano)
+  return (
+    <div className="tarjeta pila" aria-label="Lo pagado en el dentista" style={{ gap: 8 }}>
+      <p style={{ margin: 0 }} role="status">
+        💶{' '}
+        {elegido ? (
+          <>
+            En {elegido.ano} pagaste <strong>{euros(elegido.importe)}</strong> en el dentista (
+            {elegido.veces === 1 ? '1 tratamiento' : `${elegido.veces} tratamientos`}).
+          </>
+        ) : (
+          <>
+            En total llevas pagado <strong>{euros(total)}</strong> en el dentista.
+          </>
+        )}
+      </p>
+      {porAno.length > 0 && (
+        <div className="sugerencias" style={{ marginTop: 0 }}>
+          <button type="button" className="opcion" aria-pressed={!elegido} onClick={() => setAno('')}>
+            Total
+          </button>
+          {porAno.map((a) => (
+            <button key={a.ano} type="button" className="opcion" aria-pressed={a.ano === elegido?.ano} onClick={() => setAno(a.ano)}>
+              {a.ano}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Salud dental: el dibujo de la boca, lo que tiene cada diente y todo lo que te han hecho. */
 export function Dental({ perfilId }: { perfilId: string }) {
   const [editando, setEditando] = useState<{ tratamiento?: TratamientoDental; dientes?: number[] } | undefined>(() =>
@@ -49,7 +86,6 @@ export function Dental({ perfilId }: { perfilId: string }) {
 
   const estados = estadoDeLosDientes(lista)
   const revision = ultimaRevision(lista)
-  const gasto = gastoDental(lista, Number(hoyISO().slice(0, 4)))
   const caries = [...estados.values()].filter((e) => e === 'caries').length
   const historia = diente ? historiaDelDiente(lista, diente) : []
 
@@ -112,12 +148,7 @@ export function Dental({ perfilId }: { perfilId: string }) {
       ) : (
         <>
           <h2 style={{ marginBottom: 0 }}>Lo que te han hecho</h2>
-          {gasto.total > 0 && (
-            <p style={{ margin: 0 }}>
-              💶 Llevas pagado <strong>{euros(gasto.total)}</strong> en el dentista
-              {gasto.ano > 0 && ` (este año, ${euros(gasto.ano)})`}.
-            </p>
-          )}
+          <GastoDental lista={lista} />
           {revision && !revision.haceMasDeUnAno && (
             <p className="texto-suave" style={{ margin: 0 }}>
               Última revisión: {fechaLarga(revision.fecha)}.

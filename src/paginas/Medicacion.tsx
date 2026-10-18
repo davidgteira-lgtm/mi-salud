@@ -4,7 +4,7 @@ import { TomaDeAhora } from '../componentes/TomaDeAhora'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
 import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { Confirmar } from '../componentes/Confirmar'
 import { Selector } from '../componentes/Selector'
 import { listarAlergias } from '../db/alergias'
@@ -17,7 +17,18 @@ import {
   revisarMedicamento,
   volverATomar,
 } from '../db/medicamentos'
-import type { Alergia, Medicamento } from '../db/tipos'
+import type { Alergia, Medicamento, MotivoFinMedicamento, ValoracionMedicamento } from '../db/tipos'
+import {
+  agruparPorTipo,
+  buscarEnHistorial,
+  duracionToma,
+  infoValoracion,
+  mismoTipo,
+  MOTIVOS_FIN,
+  textoMotivoFin,
+  VALORACIONES,
+  vecesTomado,
+} from '../utils/historialMedicacion'
 import { fechaLarga, hoyISO } from '../utils/fechas'
 import { buscarMedicamento, comprobarAlergias, sugerirMedicamentos, tipoDeMedicamento, type AvisoAlergia } from '../utils/medicamentos'
 
@@ -29,6 +40,8 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
   const [pestana, setPestana] = useState<'ahora' | 'antes'>('ahora')
   const [editando, setEditando] = useState<Medicamento | null | undefined>(() => (pideNuevo() ? null : undefined))
   const [dejando, setDejando] = useState<Medicamento>()
+  const [busqueda, setBusqueda] = useState('')
+  const [verPor, setVerPor] = useState<'fecha' | 'tipo'>('fecha')
 
   if (!actuales || !anteriores || !alergias) return null
 
@@ -38,10 +51,24 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
         perfilId={perfilId}
         medicamento={editando ?? undefined}
         alergias={alergias}
+        historial={anteriores}
         onTerminar={() => setEditando(undefined)}
       />
     )
   }
+
+  const todos = [...actuales, ...anteriores]
+  const tarjeta = (m: Medicamento) => (
+    <TarjetaMedicamento
+      key={m.id}
+      medicamento={m}
+      veces={vecesTomado(m.nombre, todos).length}
+      avisos={comprobarAlergias(m.nombre, alergias)}
+      onCambiar={() => setEditando(m)}
+      onDejar={() => setDejando(m)}
+      onVolver={() => volverATomar(m.id).then(() => setPestana('ahora'))}
+    />
+  )
 
   // Medicamentos que se toman ahora y chocan con alguna alergia.
   const conflictos = actuales.map((m) => ({ m, avisos: comprobarAlergias(m.nombre, alergias) })).filter((c) => c.avisos.length > 0)
@@ -77,16 +104,17 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
         <p className="aviso">Aquí aparecerán los medicamentos que dejes de tomar, con sus fechas.</p>
       )}
 
-      {(pestana === 'ahora' ? actuales : anteriores).map((m) => (
-        <TarjetaMedicamento
-          key={m.id}
-          medicamento={m}
-          avisos={comprobarAlergias(m.nombre, alergias)}
-          onCambiar={() => setEditando(m)}
-          onDejar={() => setDejando(m)}
-          onVolver={() => volverATomar(m.id).then(() => setPestana('ahora'))}
+      {pestana === 'antes' && anteriores.length > 0 && (
+        <HistorialAnterior
+          anteriores={anteriores}
+          busqueda={busqueda}
+          onBusqueda={setBusqueda}
+          verPor={verPor}
+          onVerPor={setVerPor}
+          tarjeta={tarjeta}
         />
-      ))}
+      )}
+      {pestana === 'ahora' && actuales.map(tarjeta)}
 
       <button className="boton" onClick={() => setEditando(null)}>
         ➕ Añadir medicamento
@@ -96,31 +124,23 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
         El tipo y el uso de cada medicamento son orientativos. Ante cualquier duda, pregunta a tu médico o en la farmacia.
       </p>
 
-      {dejando && (
-        <Confirmar
-          titulo={`¿Ya no tomas ${dejando.nombre}?`}
-          textoSi="Sí, ya no lo tomo"
-          onSi={async () => {
-            await dejarDeTomar(dejando.id)
-            setDejando(undefined)
-          }}
-          onNo={() => setDejando(undefined)}
-        >
-          <p>Pasará a «Lo que tomé antes», con la fecha de hoy. Podrás volver a tomarlo cuando quieras.</p>
-        </Confirmar>
-      )}
+      {dejando && <DialogoDejar medicamento={dejando} onTerminar={() => setDejando(undefined)} />}
     </div>
   )
 }
 
 function TarjetaMedicamento(props: {
   medicamento: Medicamento
+  /** Cuántas veces está apuntado (contando esta). */
+  veces: number
   avisos: AvisoAlergia[]
   onCambiar: () => void
   onDejar: () => void
   onVolver: () => void
 }) {
   const m = props.medicamento
+  const duracion = duracionToma(m)
+  const valoracion = infoValoracion(m.valoracion)
   return (
     <article className={props.avisos.length > 0 ? 'tarjeta pila tarjeta-alerta' : 'tarjeta pila'} style={{ gap: 8 }}>
       <strong style={{ fontSize: '1.3rem' }}>{m.nombre}</strong>
@@ -154,6 +174,26 @@ function TarjetaMedicamento(props: {
               .filter(Boolean)
               .join(' ')}
       </span>
+      {duracion && <span>⏱️ {duracion.texto}</span>}
+      {valoracion && (
+        <span>
+          {valoracion.icono} <strong>{valoracion.texto}</strong>
+          {m.motivoFin && <span className="texto-suave"> · {textoMotivoFin(m.motivoFin)}</span>}
+        </span>
+      )}
+      {!valoracion && m.motivoFin && <span className="texto-suave">{textoMotivoFin(m.motivoFin)}</span>}
+      {m.efectos && (
+        <span>
+          <span className="texto-suave">Lo que noté: </span>
+          {m.efectos}
+        </span>
+      )}
+      {m.notas && (
+        <span className="texto-suave" style={{ whiteSpace: 'pre-line' }}>
+          📝 {m.notas}
+        </span>
+      )}
+      {props.veces > 1 && <span className="texto-suave">📚 Lo has tomado {props.veces} veces.</span>}
       {m.activo === 1 && <TomaDeAhora medicamento={m} />}
       {props.avisos.map((a) => (
         <p key={a.alergia.id} className={a.nivel === 'alto' ? 'aviso aviso-error' : 'aviso'} style={{ margin: 0 }}>
@@ -177,7 +217,13 @@ function TarjetaMedicamento(props: {
   )
 }
 
-function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicamento; alergias: Alergia[]; onTerminar: () => void }) {
+function FormularioMedicamento(props: {
+  perfilId: string
+  medicamento?: Medicamento
+  alergias: Alergia[]
+  historial: Medicamento[]
+  onTerminar: () => void
+}) {
   const m = props.medicamento
   const [nombre, setNombre] = useState(m?.nombre ?? '')
   const [dosis, setDosis] = useState(m?.dosis ?? '')
@@ -190,6 +236,9 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
   const [loTomaAhora, setLoTomaAhora] = useState<'si' | 'no'>(m && !m.activo ? 'no' : 'si')
   const [fechaFin, setFechaFin] = useState(m?.fechaFin ?? '')
   const [notas, setNotas] = useState(m?.notas ?? '')
+  const [valoracion, setValoracion] = useState<ValoracionMedicamento | ''>(m?.valoracion ?? '')
+  const [efectos, setEfectos] = useState(m?.efectos ?? '')
+  const [motivoFin, setMotivoFin] = useState<MotivoFinMedicamento | ''>(m?.motivoFin ?? '')
   const [error, setError] = useState('')
   const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>(tomarArchivo)
   const [confirmarAlergia, setConfirmarAlergia] = useState(false)
@@ -214,6 +263,9 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
       fechaFin: loTomaAhora === 'no' ? fechaFin || hoyISO() : undefined,
       activo: loTomaAhora === 'si' ? (1 as const) : (0 as const),
       notas,
+      valoracion: valoracion || undefined,
+      efectos,
+      motivoFin: motivoFin || undefined,
     }
   }
 
@@ -257,6 +309,8 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
           ⚠️ <strong>{a.nivel === 'alto' ? '¡Cuidado!' : 'Precaución.'}</strong> {a.motivo} Consulta con tu médico antes de tomarlo.
         </p>
       ))}
+
+      {!m && <YaLoTomaste nombre={nombre} historial={props.historial} />}
 
       {reconocido && (
         <div className="aviso aviso-ok" style={{ margin: 0 }}>
@@ -323,6 +377,32 @@ function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicame
           <input type="date" value={fechaFin} max={hoyISO()} onChange={(e) => setFechaFin(e.target.value)} />
         </label>
       )}
+
+      {loTomaAhora === 'no' && (
+        <Selector
+          etiqueta="¿Por qué lo dejaste? (si quieres)"
+          opciones={MOTIVOS_FIN}
+          valor={motivoFin}
+          onCambio={(v) => setMotivoFin((x) => (x === v ? '' : v))}
+        />
+      )}
+
+      <Selector
+        etiqueta={loTomaAhora === 'no' ? '¿Qué tal te fue? (si quieres)' : '¿Qué tal te está yendo? (si quieres)'}
+        ayuda="Así, si te lo vuelven a recetar, sabrás si te funcionó."
+        opciones={VALORACIONES}
+        valor={valoracion}
+        onCambio={(v) => setValoracion((x) => (x === v ? '' : v))}
+      />
+      <label className="campo">
+        <span>Efectos o lo que notaste (si quieres)</span>
+        <input
+          type="text"
+          value={efectos}
+          onChange={(e) => setEfectos(e.target.value)}
+          placeholder="Me daba sueño, me quitó el dolor en dos días…"
+        />
+      </label>
 
       <label className="campo">
         <span>Notas (si quieres)</span>
@@ -422,5 +502,132 @@ function EditorHoras({ horas, onCambio }: { horas: string[]; onCambio: (h: strin
         </button>
       </div>
     </fieldset>
+  )
+}
+
+/** Los medicamentos agrupados por el año en que se dejaron (o se empezaron). */
+function porAno(lista: Medicamento[]): [string, Medicamento[]][] {
+  const grupos = new Map<string, Medicamento[]>()
+  for (const m of lista) {
+    const ano = (m.fechaFin ?? m.fechaInicio ?? '').slice(0, 4) || 'Sin fecha'
+    grupos.set(ano, [...(grupos.get(ano) ?? []), m])
+  }
+  return [...grupos]
+}
+
+/** «Lo que tomé antes»: buscador y la lista por año (de cuándo lo dejó) o por tipo de medicamento. */
+function HistorialAnterior(props: {
+  anteriores: Medicamento[]
+  busqueda: string
+  onBusqueda: (t: string) => void
+  verPor: 'fecha' | 'tipo'
+  onVerPor: (v: 'fecha' | 'tipo') => void
+  tarjeta: (m: Medicamento) => ReactNode
+}) {
+  const lista = buscarEnHistorial(props.anteriores, props.busqueda)
+  const bien = props.anteriores.filter((m) => m.valoracion === 'bien').length
+  const mal = props.anteriores.filter((m) => m.valoracion === 'mal').length
+  const grupos = props.verPor === 'tipo' ? agruparPorTipo(lista) : porAno(lista)
+  return (
+    <>
+      <p style={{ margin: 0 }}>
+        Tu historial: <strong>{props.anteriores.length} medicamentos</strong>
+        {bien > 0 && ` · 👍 ${bien} te fueron bien`}
+        {mal > 0 && ` · 👎 ${mal} te fueron mal`}.
+      </p>
+      <label className="campo">
+        <span>¿Ya lo has tomado alguna vez?</span>
+        <small>Escribe el nombre, el tipo (antibiótico, antiinflamatorio…) o para qué era.</small>
+        <input
+          type="search"
+          value={props.busqueda}
+          onChange={(e) => props.onBusqueda(e.target.value)}
+          placeholder="Amoxicilina, antibiótico, dolor…"
+        />
+      </label>
+      <div className="sugerencias" style={{ marginTop: 0 }}>
+        <button type="button" className="opcion" aria-pressed={props.verPor === 'fecha'} onClick={() => props.onVerPor('fecha')}>
+          📅 Por año
+        </button>
+        <button type="button" className="opcion" aria-pressed={props.verPor === 'tipo'} onClick={() => props.onVerPor('tipo')}>
+          💊 Por tipo de medicamento
+        </button>
+      </div>
+      {lista.length === 0 && <p className="aviso">No lo has tomado, o no está apuntado. Prueba con otra palabra.</p>}
+      {grupos.map(([titulo, meds]) => (
+        <section key={titulo} className="pila">
+          <h3 className="titulo-ano">
+            {titulo}
+            {props.verPor === 'tipo' && <span className="texto-suave"> ({meds.length})</span>}
+          </h3>
+          {meds.map(props.tarjeta)}
+        </section>
+      ))}
+    </>
+  )
+}
+
+/** Al apuntar uno nuevo: si ya lo tomó antes, o tomó otros del mismo tipo, y qué tal le fue. */
+function YaLoTomaste({ nombre, historial }: { nombre: string; historial: Medicamento[] }) {
+  if (nombre.trim().length < 4) return null
+  const antes = vecesTomado(nombre, historial)
+  const parecidos = mismoTipo(nombre, historial)
+  if (antes.length === 0 && parecidos.length === 0) return null
+  const linea = (m: Medicamento) => {
+    const v = infoValoracion(m.valoracion)
+    const cuando = (m.fechaFin ?? m.fechaInicio)?.slice(0, 4)
+    return (
+      <li key={m.id}>
+        <strong>{m.nombre}</strong>
+        {cuando && ` (${cuando})`}
+        {v && `: ${v.icono} ${v.texto.toLowerCase()}`}
+        {m.efectos && <span className="texto-suave"> · {m.efectos}</span>}
+      </li>
+    )
+  }
+  return (
+    <div className="aviso aviso-cita pila" role="status" style={{ margin: 0, gap: 6 }}>
+      {antes.length > 0 && (
+        <>
+          <strong>📚 Ya lo tomaste {antes.length === 1 ? 'una vez' : `${antes.length} veces`}:</strong>
+          <ul style={{ margin: 0, paddingLeft: 22 }}>{antes.map(linea)}</ul>
+        </>
+      )}
+      {parecidos.length > 0 && (
+        <>
+          <strong>💊 Del mismo tipo ya tomaste:</strong>
+          <ul style={{ margin: 0, paddingLeft: 22 }}>{parecidos.slice(0, 8).map(linea)}</ul>
+        </>
+      )}
+      <small>Coméntaselo a tu médico si alguno te fue mejor o peor.</small>
+    </div>
+  )
+}
+
+/** «Ya no lo tomo»: con la fecha de hoy y, si quiere, por qué y qué tal le fue. */
+function DialogoDejar({ medicamento, onTerminar }: { medicamento: Medicamento; onTerminar: () => void }) {
+  const [motivo, setMotivo] = useState<MotivoFinMedicamento | ''>('')
+  const [valoracion, setValoracion] = useState<ValoracionMedicamento | ''>(medicamento.valoracion ?? '')
+  return (
+    <Confirmar
+      titulo={`¿Ya no tomas ${medicamento.nombre}?`}
+      textoSi="Sí, ya no lo tomo"
+      onSi={async () => {
+        await dejarDeTomar(medicamento.id, undefined, { motivoFin: motivo || undefined, valoracion: valoracion || undefined })
+        onTerminar()
+      }}
+      onNo={onTerminar}
+    >
+      <div className="pila" style={{ gap: 10, textAlign: 'left' }}>
+        <p style={{ margin: 0 }}>Pasará a «Lo que tomé antes», con la fecha de hoy. Podrás volver a tomarlo cuando quieras.</p>
+        <Selector etiqueta="¿Por qué? (si quieres)" opciones={MOTIVOS_FIN} valor={motivo} onCambio={(v) => setMotivo((x) => (x === v ? '' : v))} />
+        <Selector
+          etiqueta="¿Qué tal te fue? (si quieres)"
+          opciones={VALORACIONES}
+          valor={valoracion}
+          onCambio={(v) => setValoracion((x) => (x === v ? '' : v))}
+        />
+      </div>
+    </Confirmar>
   )
 }

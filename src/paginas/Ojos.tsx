@@ -23,6 +23,8 @@ import {
 import type { GraduacionOjo, RevisionOcular } from '../db/tipos'
 import { fechaLarga, hoyISO } from '../utils/fechas'
 import { leerNumero } from '../utils/numeros'
+import { leerRecetaGafas } from '../utils/leerDocumentos'
+import { textoLectura, useLecturaPdf } from '../componentes/useLecturaPdf'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const etiqueta = (f: string) => `${MESES[Number(f.slice(5, 7)) - 1]} ${f.slice(2, 4)}`
@@ -188,6 +190,20 @@ function FormularioOcular(props: { perfilId: string; revision?: RevisionOcular; 
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
+  // Con el PDF de la receta, se rellenan los números (sin IA). Solo lo que esté en blanco, para no pisar lo escrito.
+  const lectura = useLecturaPdf(pendientes, leerRecetaGafas, (l) => {
+    if (!r && l.fecha) setFecha(l.fecha)
+    if (!r && l.tipo) setTipo(l.tipo)
+    if (l.donde) setDonde((d) => d || l.donde!)
+    if (l.notas) setNotas((n) => n || l.notas!)
+    setOjos((x) => ({
+      derecho: { ...x.derecho, ...Object.fromEntries(Object.entries(l.derecho).filter(([k]) => !x.derecho[k as keyof Textos])) },
+      izquierdo: { ...x.izquierdo, ...Object.fromEntries(Object.entries(l.izquierdo).filter(([k]) => !x.izquierdo[k as keyof Textos])) },
+    }))
+    return '📄 He leído la receta y he copiado los números. Revísalos con el papel antes de guardar.'
+  })
+  const avisoLectura = textoLectura(lectura)
+
   async function guardar(e: FormEvent) {
     e.preventDefault()
     const derecho = leerOjo(ojos.derecho, 'derecho')
@@ -206,8 +222,14 @@ function FormularioOcular(props: { perfilId: string; revision?: RevisionOcular; 
     <form className="pila" onSubmit={guardar} noValidate>
       <h2>👁️ {r ? 'Cambiar revisión de la vista' : 'Revisión de la vista'}</h2>
       <p className="texto-suave" style={{ margin: 0 }}>
-        Copia los números de la receta de las gafas o del informe. Deja en blanco lo que no venga.
+        Copia los números de la receta de las gafas o del informe. Deja en blanco lo que no venga. Si tienes la receta en PDF, adjúntala abajo
+        y la app copia los números por ti.
       </p>
+      {avisoLectura && (
+        <p className={avisoLectura.clase} role="status" style={{ margin: 0 }}>
+          {avisoLectura.texto}
+        </p>
+      )}
 
       <label className="campo">
         <span>Fecha</span>
@@ -254,7 +276,7 @@ function FormularioOcular(props: { perfilId: string; revision?: RevisionOcular; 
         registroId={r?.id}
         pendientes={pendientes}
         onPendientes={setPendientes}
-        ayuda="Por ejemplo, una foto de la receta de las gafas o el informe del oftalmólogo."
+        ayuda="Por ejemplo, la receta de las gafas (si es un PDF, la app copia los números) o el informe del oftalmólogo."
       />
 
       {error && (

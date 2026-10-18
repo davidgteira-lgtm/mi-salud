@@ -9,8 +9,14 @@ export interface TrozoPdf {
   width: number
 }
 
-/** Une los trozos que están a la misma altura en una línea, de izquierda a derecha. */
-export function lineasDeTrozos(trozos: TrozoPdf[]): string[] {
+/** Una línea del PDF: su texto y, para las tablas, cada trozo con lo a la izquierda que empieza. */
+export interface FilaPdf {
+  texto: string
+  trozos: { str: string; x: number }[]
+}
+
+/** Une los trozos que están a la misma altura en una fila, de izquierda a derecha. */
+export function filasDeTrozos(trozos: TrozoPdf[]): FilaPdf[] {
   const conTexto = trozos.filter((t) => t.str.trim() !== '')
   // De arriba abajo (en los PDF, la y crece hacia arriba).
   const orden = [...conTexto].sort((a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4])
@@ -32,24 +38,30 @@ export function lineasDeTrozos(trozos: TrozoPdf[]): string[] {
       texto += t.str
       finAnterior = x + t.width
     }
-    return texto.replace(/\s+/g, ' ').trim()
+    return { texto: texto.replace(/\s+/g, ' ').trim(), trozos: ordenados.map((t) => ({ str: t.str.trim(), x: t.transform[4] })) }
   })
 }
 
-/** Todo el texto de un PDF, página a página. Si el PDF es una imagen escaneada, sale vacío. */
-export async function textoDePdf(archivo: Blob): Promise<string> {
+export const lineasDeTrozos = (trozos: TrozoPdf[]): string[] => filasDeTrozos(trozos).map((f) => f.texto)
+
+/** Todas las filas de un PDF, página tras página. Si el PDF es una imagen escaneada, sale vacío. */
+export async function filasDePdf(archivo: Blob): Promise<FilaPdf[]> {
   // Se carga solo cuando hace falta (es grande). La versión «legacy» funciona también en móviles antiguos.
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const { default: trabajador } = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
   pdfjs.GlobalWorkerOptions.workerSrc = trabajador
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await archivo.arrayBuffer()) }).promise
-  const paginas: string[] = []
+  const filas: FilaPdf[] = []
   for (let n = 1; n <= doc.numPages; n++) {
     const pagina = await doc.getPage(n)
     const contenido = await pagina.getTextContent()
-    const trozos = contenido.items.filter((i) => 'str' in i) as TrozoPdf[]
-    paginas.push(lineasDeTrozos(trozos).join('\n'))
+    filas.push(...filasDeTrozos(contenido.items.filter((i) => 'str' in i) as TrozoPdf[]))
   }
   await doc.destroy()
-  return paginas.join('\n')
+  return filas
+}
+
+/** Todo el texto de un PDF, línea a línea. */
+export async function textoDePdf(archivo: Blob): Promise<string> {
+  return (await filasDePdf(archivo)).map((f) => f.texto).join('\n')
 }

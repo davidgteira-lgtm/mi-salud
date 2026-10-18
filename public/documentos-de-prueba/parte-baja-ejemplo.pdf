@@ -15,18 +15,18 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 6 0 obj
-<< /Length 865 >>
+<< /Length 860 >>
 stream
 BT /F2 14 Tf 50 780 Td (PARTE MÉDICO DE BAJA DE INCAPACIDAD TEMPORAL) Tj ET
 BT /F1 9 Tf 50 762 Td (Modelo de prueba \(copia para la persona trabajadora\)) Tj ET
 BT /F1 10 Tf 50 730 Td (Trabajador/a: PERSONA DE PRUEBA) Tj ET
 BT /F1 10 Tf 50 715 Td (Empresa: EMPRESA EJEMPLO S. L.) Tj ET
-BT /F1 10 Tf 50 690 Td (Fecha de la baja: 16/10/2026) Tj ET
+BT /F1 10 Tf 50 690 Td (Fecha de la baja: 05/10/2026) Tj ET
 BT /F1 10 Tf 50 675 Td (Contingencia: enfermedad común) Tj ET
 BT /F1 10 Tf 50 660 Td (Diagnóstico: gripe \(síndrome gripal\)) Tj ET
-BT /F1 10 Tf 50 645 Td (Duración estimada: muy corta \(menos de 5 días naturales\)) Tj ET
-BT /F1 10 Tf 50 630 Td (Fecha de la próxima revisión: 19/10/2026) Tj ET
-BT /F1 10 Tf 50 590 Td (Médico: Dra. Ejemplo - Centro de Salud Ejemplo) Tj ET
+BT /F1 10 Tf 50 560 Td (Médico: Dra. Ejemplo - Centro de Salud Ejemplo) Tj ET
+BT /F1 10 Tf 50 645 Td (Duración estimada: corta \(de 5 a 30 días naturales\)) Tj ET
+BT /F1 10 Tf 50 630 Td (Fecha de la próxima revisión: 12/10/2026) Tj ET
 BT /F2 8 Tf 50 30 Td (DOCUMENTO DE PRUEBA CON DATOS INVENTADOS. NO TIENE NINGUNA VALIDEZ.) Tj ET
 BT /F2 8 Tf 400 812 Td (EJEMPLO - NO VALIDO) Tj ET
 endstream
@@ -43,5 +43,5 @@ xref
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-1366
+1361
 %%EOF

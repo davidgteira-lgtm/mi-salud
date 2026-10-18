@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { AjustesIa } from '../componentes/AjustesIa'
 import { Confirmar } from '../componentes/Confirmar'
@@ -23,14 +23,28 @@ export function Ajustes() {
   const { apartado } = useParams()
   const { perfil } = usePerfilActivo()
   const ir = useNavigate()
+  // Se llega desde abajo del inicio: se empieza a leer por arriba.
+  useEffect(() => window.scrollTo(0, 0), [apartado])
 
   return (
     <main className="pagina pila">
       <button className="boton-volver" onClick={() => ir(perfil ? '/inicio' : '/')} style={{ alignSelf: 'flex-start' }}>
         ← Volver
       </button>
-      <h1>{apartado === 'recuperar' ? 'Recuperar una copia' : 'Ajustes'}</h1>
+      <h1>{apartado === 'recuperar' ? 'Recuperar una copia' : apartado === 'ia' ? 'Leer documentos con IA' : 'Ajustes'}</h1>
 
+      {/* Desde el aviso del inicio: solo la explicación de la IA. */}
+      {apartado === 'ia' && <AjustesIa />}
+      {apartado !== 'ia' && <ResumenAjustes apartado={apartado} />}
+    </main>
+  )
+}
+
+function ResumenAjustes({ apartado }: { apartado?: string }) {
+  const { perfil } = usePerfilActivo()
+  const ir = useNavigate()
+  return (
+    <>
       {apartado !== 'recuperar' && <GuardarCopia />}
       <RecuperarCopia />
 
@@ -56,7 +70,7 @@ export function Ajustes() {
           Por eso es importante hacer copias de seguridad: si pierdes el móvil o se rompe, con la copia lo recuperas todo en otro.
         </p>
       </section>
-    </main>
+    </>
   )
 }
 

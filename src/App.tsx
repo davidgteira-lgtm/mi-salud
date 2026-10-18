@@ -3,6 +3,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router'
 import { AvisoActualizacion } from './componentes/AvisoActualizacion'
 import { LectorVoz } from './componentes/LectorVoz'
+import { Logo } from './componentes/Logo'
 import { ElegirPerfil } from './paginas/ElegirPerfil'
 import { FormularioPerfil } from './paginas/FormularioPerfil'
 import { Inicio } from './paginas/Inicio'
@@ -28,8 +29,11 @@ export default function App() {
   return (
     <ProveedorPerfil>
       <HashRouter>
-        {/* La barra de leer en voz alta va arriba del todo en todas las pantallas. */}
-        <LectorVoz />
+        {/* Arriba del todo en todas las pantallas: el logo a la izquierda y leer en voz alta a la derecha. */}
+        <header className="barra-superior">
+          <Logo />
+          <LectorVoz />
+        </header>
         <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<ElegirPerfil />} />

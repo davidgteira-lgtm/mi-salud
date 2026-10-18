@@ -44,10 +44,51 @@ function AvisoProximasCitas({ perfilId }: { perfilId: string }) {
   )
 }
 
-/** Entrada a la IA: solo si está activada en este móvil. */
+const OCULTAR_AVISO_IA = 'mi-salud-ocultar-aviso-ia'
+
+/** Sin IA: un aviso que explica qué es, cuánto cuesta y cómo activarla. Se puede ocultar. */
+function AvisoIa() {
+  const [oculto, setOculto] = useState(() => {
+    try {
+      return localStorage.getItem(OCULTAR_AVISO_IA) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (oculto) return null
+  return (
+    <div className="pila" style={{ gap: 4 }}>
+      <Link to="/ajustes/ia" className="banner-ia">
+        <span style={{ fontSize: '2rem' }} aria-hidden="true">
+          🤖
+        </span>
+        <span>
+          ¿Quieres que la app lea tus documentos?
+          <small>Te explicamos cómo activar la IA y cuánto cuesta (muy poco). Pulsa aquí.</small>
+        </span>
+      </Link>
+      <button
+        className="enlace"
+        style={{ alignSelf: 'flex-end' }}
+        onClick={() => {
+          try {
+            localStorage.setItem(OCULTAR_AVISO_IA, '1')
+          } catch {
+            // Sin almacenamiento, se oculta solo hasta la próxima vez.
+          }
+          setOculto(true)
+        }}
+      >
+        No me interesa, ocultar
+      </button>
+    </div>
+  )
+}
+
+/** Entrada a la IA: si está activada en este móvil; si no, el aviso de cómo activarla. */
 function EntradaIa({ perfilId }: { perfilId: string }) {
   const sinLeer = useLiveQuery(async () => (await adjuntosPendientes(perfilId)).filter((a) => sePuedeAnalizar(a).si).length, [perfilId])
-  if (!obtenerClave()) return null
+  if (!obtenerClave()) return <AvisoIa />
   return (
     <Link to="/revisar" className="banner-ia">
       <span style={{ fontSize: '2rem' }} aria-hidden="true">

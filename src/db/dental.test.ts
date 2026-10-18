@@ -110,11 +110,29 @@ describe('lo pagado en el dentista', () => {
     expect(leerImporte('mucho')).toBeNaN()
   })
 
-  it('suma el total y lo de un año', async () => {
+  it('escribe los euros a la española', async () => {
+    const { euros } = await import('./dental')
+    expect(euros(55)).toBe('55 €')
+    expect(euros(2060)).toBe('2.060 €')
+    expect(euros(1250.5)).toBe('1.250,50 €')
+    expect(euros(1234567)).toBe('1.234.567 €')
+  })
+
+  it('suma el total y lo de cada año', async () => {
     const { gastoDental } = await import('./dental')
-    expect(gastoDental([{ fecha: '2025-03-01', importe: 60 }, { fecha: '2026-02-01', importe: 450 }, { fecha: '2026-06-01' }], 2026)).toEqual({
-      total: 510,
-      ano: 450,
+    expect(
+      gastoDental([
+        { fecha: '2025-03-01', importe: 60 },
+        { fecha: '2026-02-01', importe: 450 },
+        { fecha: '2026-05-01', importe: 50 },
+        { fecha: '2026-06-01' },
+      ]),
+    ).toEqual({
+      total: 560,
+      porAno: [
+        { ano: '2026', importe: 500, veces: 2 },
+        { ano: '2025', importe: 60, veces: 1 },
+      ],
     })
   })
 })

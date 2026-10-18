@@ -105,18 +105,35 @@ pdf('receta-ejemplo.pdf', [
   [50, 490, 10, 'Médico: Dra. Ejemplo - N. colegiado 00/00000'],
 ])
 
-// 3. Parte de baja
-pdf('parte-baja-ejemplo.pdf', [
-  [50, 780, 14, 'PARTE MÉDICO DE BAJA DE INCAPACIDAD TEMPORAL', true],
+// 3. Partes de una misma baja: el de baja, uno de confirmación y el de alta (la app los lee sin IA).
+const parteComun = [
   [50, 762, 9, 'Modelo de prueba (copia para la persona trabajadora)'],
   [50, 730, 10, 'Trabajador/a: PERSONA DE PRUEBA'],
   [50, 715, 10, 'Empresa: EMPRESA EJEMPLO S. L.'],
-  [50, 690, 10, 'Fecha de la baja: 16/10/2026'],
+  [50, 690, 10, 'Fecha de la baja: 05/10/2026'],
   [50, 675, 10, 'Contingencia: enfermedad común'],
   [50, 660, 10, 'Diagnóstico: gripe (síndrome gripal)'],
-  [50, 645, 10, 'Duración estimada: muy corta (menos de 5 días naturales)'],
-  [50, 630, 10, 'Fecha de la próxima revisión: 19/10/2026'],
-  [50, 590, 10, 'Médico: Dra. Ejemplo - Centro de Salud Ejemplo'],
+  [50, 560, 10, 'Médico: Dra. Ejemplo - Centro de Salud Ejemplo'],
+]
+pdf('parte-baja-ejemplo.pdf', [
+  [50, 780, 14, 'PARTE MÉDICO DE BAJA DE INCAPACIDAD TEMPORAL', true],
+  ...parteComun,
+  [50, 645, 10, 'Duración estimada: corta (de 5 a 30 días naturales)'],
+  [50, 630, 10, 'Fecha de la próxima revisión: 12/10/2026'],
+])
+pdf('parte-confirmacion-ejemplo.pdf', [
+  [50, 780, 14, 'PARTE MÉDICO DE CONFIRMACIÓN N.º 1 DE INCAPACIDAD TEMPORAL', true],
+  ...parteComun,
+  [50, 635, 10, 'Fecha de este parte: 12/10/2026'],
+  [50, 620, 10, 'Continúa en situación de incapacidad temporal.'],
+  [50, 605, 10, 'Fecha de la próxima revisión: 15/10/2026'],
+])
+pdf('parte-alta-ejemplo.pdf', [
+  [50, 780, 14, 'PARTE MÉDICO DE ALTA DE INCAPACIDAD TEMPORAL', true],
+  ...parteComun,
+  [50, 635, 10, 'Fecha del alta: 15/10/2026', true],
+  [50, 620, 10, 'Motivo del alta: curación'],
+  [50, 605, 10, 'Se incorpora a su trabajo al día siguiente.'],
 ])
 
 // 4. Informe de radiografía

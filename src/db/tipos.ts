@@ -86,7 +86,16 @@ export interface Medicamento extends RegistroBase {
   /** 1 = lo toma ahora; 0 = lo tomó antes. (Número y no sí/no porque la base de datos busca por él.) */
   activo: 0 | 1
   notas?: string
+  /** Qué tal le fue, para saber si volver a tomarlo o pedir otro. */
+  valoracion?: ValoracionMedicamento
+  /** Efectos secundarios o lo que notó al tomarlo. */
+  efectos?: string
+  /** Por qué lo dejó. */
+  motivoFin?: MotivoFinMedicamento
 }
+
+export type ValoracionMedicamento = 'bien' | 'regular' | 'mal'
+export type MotivoFinMedicamento = 'terminado' | 'no-funciono' | 'efectos' | 'cambio' | 'otro'
 
 /** Una cita médica, próxima o pasada. */
 export interface Cita extends RegistroBase {

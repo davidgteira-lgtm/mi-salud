@@ -19,7 +19,7 @@ import { borrarPerfil, crearPerfil } from '../db/perfiles'
 import { marcarTomada } from '../db/tomas'
 import { guardarPropia, guardarRegistro } from '../db/revisiones'
 import { guardarContacto } from '../db/telefonos'
-import type { Baja, FechaISO, ResultadoAnalisis, RevisionOcular } from '../db/tipos'
+import type { Baja, FechaISO, MotivoFinMedicamento, ResultadoAnalisis, RevisionOcular, ValoracionMedicamento } from '../db/tipos'
 import { buscarPrueba } from '../utils/analisis'
 import { sumarDias } from '../utils/ciclos'
 import { hoyISO } from '../utils/fechas'
@@ -43,7 +43,41 @@ function r(nombre: string, valor: number, unidad: string, refMin?: number, refMa
 }
 
 /** Sube cuando los datos de ejemplo cambian: así se avisa a quien tenga los antiguos. */
-export const VERSION_EJEMPLOS = 4
+export const VERSION_EJEMPLOS = 5
+
+/** Un medicamento que se tomó antes: desde qué día, cuántos días, para qué y qué tal fue. */
+interface TomadoAntes {
+  nombre: string
+  dosis?: string
+  paraQue: string
+  desde: FechaISO
+  dias: number
+  valoracion?: ValoracionMedicamento
+  motivoFin?: MotivoFinMedicamento
+  efectos?: string
+  /** Solo si no está en la lista de medicamentos de la app. */
+  familia?: string
+  notas?: string
+}
+
+async function historialMedicacion(perfilId: string, lista: TomadoAntes[]): Promise<void> {
+  for (const m of lista) {
+    await guardarMedicamento(perfilId, {
+      nombre: m.nombre,
+      dosis: m.dosis,
+      momentos: [],
+      paraQue: m.paraQue,
+      familia: m.familia,
+      fechaInicio: m.desde,
+      fechaFin: sumarDias(m.desde, m.dias - 1),
+      activo: 0,
+      valoracion: m.valoracion,
+      motivoFin: m.motivoFin ?? 'terminado',
+      efectos: m.efectos,
+      notas: m.notas,
+    })
+  }
+}
 
 export async function borrarEjemplos(): Promise<void> {
   const ejemplos = await db.perfiles.filter((p) => !!p.ejemplo).toArray()
@@ -115,6 +149,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     familia: 'Anticoagulante',
     fechaInicio: `${ano - 6}-03-15`,
     activo: 1,
+    valoracion: 'bien',
   })
   await guardarMedicamento(id, {
     nombre: 'Enalapril 20 mg',
@@ -124,6 +159,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     paraQue: 'La tensión',
     fechaInicio: `${ano - 14}-05-02`,
     activo: 1,
+    valoracion: 'bien',
   })
   await guardarMedicamento(id, {
     nombre: 'Atorvastatina 20 mg',
@@ -133,6 +169,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     paraQue: 'El colesterol',
     fechaInicio: `${ano - 4}-09-20`,
     activo: 1,
+    valoracion: 'bien',
+    efectos: 'Sin los dolores de piernas que le daba la simvastatina.',
   })
   await guardarMedicamento(id, {
     nombre: 'Metformina 850 mg',
@@ -142,6 +180,8 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     paraQue: 'El azúcar',
     fechaInicio: `${ano - 8}-01-10`,
     activo: 1,
+    valoracion: 'regular',
+    efectos: 'Las primeras semanas, molestias de tripa; luego bien.',
   })
   await guardarMedicamento(id, {
     nombre: 'Pantoprazol 40 mg',
@@ -151,6 +191,7 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     paraQue: 'Proteger el estómago',
     fechaInicio: dia(-120),
     activo: 1,
+    valoracion: 'bien',
   })
   const omeprazol = await guardarMedicamento(id, {
     nombre: 'Omeprazol 20 mg',
@@ -160,7 +201,252 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     fechaInicio: `${ano - 5}-02-01`,
     activo: 1,
   })
-  await dejarDeTomar(omeprazol, dia(-121))
+  await dejarDeTomar(omeprazol, dia(-121), { valoracion: 'bien', motivoFin: 'cambio' })
+
+  // Lo que tomó estos años: lo que le fue bien, lo que no, y cómo descubrió sus alergias.
+  await historialMedicacion(id, [
+    // Antibióticos
+    {
+      nombre: 'Amoxicilina 500 mg',
+      dosis: '1 cápsula cada 8 horas',
+      paraQue: 'Una faringitis',
+      desde: `${ano - 17}-02-09`,
+      dias: 2,
+      valoracion: 'mal',
+      motivoFin: 'efectos',
+      efectos: 'Ronchas por todo el cuerpo y le costaba respirar: urgencias. Así supo que es alérgica a la penicilina.',
+    },
+    {
+      nombre: 'Azitromicina 500 mg',
+      dosis: '1 comprimido al día',
+      paraQue: 'Bronquitis',
+      desde: `${ano - 12}-01-20`,
+      dias: 3,
+      valoracion: 'bien',
+      efectos: 'Mejoró en dos días.',
+    },
+    {
+      nombre: 'Claritromicina 500 mg',
+      dosis: '1 comprimido cada 12 horas',
+      paraQue: 'Neumonía',
+      desde: `${ano - 9}-11-04`,
+      dias: 10,
+      valoracion: 'regular',
+      efectos: 'Le dejaba sabor metálico y le revolvía el estómago, pero se curó.',
+    },
+    {
+      nombre: 'Ciprofloxacino 500 mg',
+      dosis: '1 comprimido cada 12 horas',
+      paraQue: 'Infección de orina',
+      desde: `${ano - 7}-07-15`,
+      dias: 7,
+      valoracion: 'bien',
+    },
+    { nombre: 'Fosfomicina 3 g', dosis: '1 sobre (una sola vez)', paraQue: 'Cistitis', desde: `${ano - 4}-08-02`, dias: 1, valoracion: 'bien' },
+    {
+      nombre: 'Fosfomicina 3 g',
+      dosis: '1 sobre (una sola vez)',
+      paraQue: 'Cistitis',
+      desde: `${ano - 2}-06-21`,
+      dias: 1,
+      valoracion: 'bien',
+      efectos: 'Al día siguiente ya estaba bien.',
+    },
+    {
+      nombre: 'Levofloxacino 500 mg',
+      dosis: '1 comprimido al día',
+      paraQue: 'Infección respiratoria',
+      desde: `${ano - 1}-02-10`,
+      dias: 7,
+      valoracion: 'regular',
+      efectos: 'Le dolían los tobillos (los tendones). El médico dijo que avisara si volvía a pasar.',
+    },
+    // Para el dolor (no puede tomar ibuprofeno ni otros antiinflamatorios)
+    {
+      nombre: 'Ibuprofeno 600 mg',
+      dosis: '1 comprimido cada 8 horas',
+      paraQue: 'Dolor de muelas',
+      desde: `${ano - 15}-10-03`,
+      dias: 1,
+      valoracion: 'mal',
+      motivoFin: 'efectos',
+      efectos: 'Se le hincharon los labios. Desde entonces, nada de antiinflamatorios.',
+    },
+    {
+      nombre: 'Paracetamol 1 g',
+      dosis: '1 comprimido cada 8 horas',
+      paraQue: 'Lumbalgia',
+      desde: `${ano - 8}-02-11`,
+      dias: 21,
+      valoracion: 'regular',
+      efectos: 'Solo le aliviaba un poco.',
+    },
+    {
+      nombre: 'Tramadol 50 mg',
+      dosis: '1 cápsula cada 12 horas',
+      paraQue: 'Lumbalgia',
+      desde: `${ano - 8}-02-14`,
+      dias: 4,
+      valoracion: 'mal',
+      motivoFin: 'efectos',
+      efectos: 'Mareos y vómitos. Lo dejó a los cuatro días.',
+    },
+    {
+      nombre: 'Metamizol 575 mg',
+      dosis: '1 cápsula cada 8 horas',
+      paraQue: 'Dolor después de la operación de cadera',
+      desde: `${ano - 5}-06-20`,
+      dias: 15,
+      valoracion: 'bien',
+      efectos: 'Le quitaba el dolor mejor que el paracetamol.',
+    },
+    {
+      nombre: 'Paracetamol 1 g',
+      dosis: '1 comprimido cada 8 horas',
+      paraQue: 'Dolor después de la operación de cadera',
+      desde: `${ano - 5}-07-05`,
+      dias: 30,
+      valoracion: 'bien',
+    },
+    { nombre: 'Paracetamol 1 g', dosis: '1 comprimido cada 8 horas', paraQue: 'Golpe de la caída', desde: dia(-200), dias: 8, valoracion: 'bien' },
+    // Después de la operación de cadera
+    {
+      nombre: 'Enoxaparina 40 mg (inyección)',
+      dosis: '1 inyección al día',
+      paraQue: 'Evitar trombos después de la operación',
+      desde: `${ano - 5}-06-20`,
+      dias: 30,
+      valoracion: 'bien',
+      efectos: 'Le salían moratones donde se pinchaba.',
+    },
+    {
+      nombre: 'Lorazepam 1 mg',
+      dosis: 'Medio comprimido al acostarse',
+      paraQue: 'Dormir y los nervios después de la operación',
+      desde: `${ano - 5}-07-01`,
+      dias: 60,
+      valoracion: 'bien',
+      notas: 'Lo fue dejando poco a poco, como le dijo la médica.',
+    },
+    // Tensión y colesterol: los cambios hasta dar con los de ahora
+    {
+      nombre: 'Hidroclorotiazida 25 mg',
+      dosis: '1 comprimido por la mañana',
+      paraQue: 'La tensión (junto con el enalapril)',
+      desde: `${ano - 10}-03-01`,
+      dias: 1100,
+      valoracion: 'regular',
+      motivoFin: 'cambio',
+      efectos: 'Iba mucho al baño.',
+    },
+    {
+      nombre: 'Amlodipino 5 mg',
+      dosis: '1 comprimido al día',
+      paraQue: 'La tensión (junto con el enalapril)',
+      desde: `${ano - 7}-03-10`,
+      dias: 120,
+      valoracion: 'mal',
+      motivoFin: 'efectos',
+      efectos: 'Se le hinchaban mucho los tobillos.',
+    },
+    {
+      nombre: 'Simvastatina 20 mg',
+      dosis: '1 comprimido por la noche',
+      paraQue: 'El colesterol',
+      desde: `${ano - 9}-05-01`,
+      dias: 1600,
+      valoracion: 'regular',
+      motivoFin: 'cambio',
+      efectos: 'Dolores en las piernas. Se la cambiaron por atorvastatina.',
+    },
+    // Azúcar
+    {
+      nombre: 'Gliclazida 30 mg',
+      dosis: '1 comprimido en el desayuno',
+      paraQue: 'El azúcar (junto con la metformina)',
+      desde: `${ano - 3}-01-15`,
+      dias: 240,
+      valoracion: 'mal',
+      motivoFin: 'efectos',
+      efectos: 'Le dieron dos bajadas de azúcar fuertes.',
+    },
+    // Huesos
+    {
+      nombre: 'Alendronato 70 mg',
+      dosis: '1 comprimido a la semana, en ayunas',
+      paraQue: 'Osteoporosis',
+      desde: `${ano - 4}-04-01`,
+      dias: 1095,
+      valoracion: 'regular',
+      efectos: 'Algo de ardor de estómago.',
+    },
+    {
+      nombre: 'Calcifediol 0,266 mg',
+      dosis: '1 cápsula al mes',
+      paraQue: 'Falta de vitamina D',
+      desde: `${ano - 4}-04-01`,
+      dias: 730,
+      valoracion: 'bien',
+      efectos: 'En el siguiente análisis ya la tenía bien.',
+    },
+    // Dormir, mareos y alergias de la piel
+    {
+      nombre: 'Melatonina 1,9 mg',
+      dosis: '1 comprimido al acostarse',
+      paraQue: 'Dormir',
+      familia: 'Suplemento para dormir',
+      desde: `${ano - 3}-10-01`,
+      dias: 60,
+      valoracion: 'mal',
+      motivoFin: 'no-funciono',
+      efectos: 'No notó nada.',
+    },
+    {
+      nombre: 'Zolpidem 10 mg',
+      dosis: 'Medio comprimido al acostarse',
+      paraQue: 'Dormir',
+      desde: `${ano - 2}-01-10`,
+      dias: 30,
+      valoracion: 'regular',
+      motivoFin: 'efectos',
+      efectos: 'Dormía, pero por la mañana se levantaba mareada.',
+    },
+    {
+      nombre: 'Betahistina 16 mg',
+      dosis: '1 comprimido cada 12 horas',
+      paraQue: 'Vértigo',
+      familia: 'Antivertiginoso',
+      desde: `${ano - 3}-03-05`,
+      dias: 30,
+      valoracion: 'bien',
+    },
+    {
+      nombre: 'Dexclorfeniramina 2 mg',
+      dosis: '1 comprimido cada 8 horas',
+      paraQue: 'Picor de piel',
+      desde: `${ano - 6}-05-12`,
+      dias: 5,
+      valoracion: 'regular',
+      efectos: 'Le quitaba el picor, pero le daba mucho sueño.',
+    },
+    {
+      nombre: 'Bilastina 20 mg',
+      dosis: '1 comprimido al día',
+      paraQue: 'Picor de piel',
+      desde: `${ano - 2}-05-03`,
+      dias: 20,
+      valoracion: 'bien',
+      efectos: 'No le daba sueño.',
+    },
+    {
+      nombre: 'Prednisona 30 mg',
+      dosis: '1 comprimido en el desayuno, bajando la dosis',
+      paraQue: 'Bronquitis que no se curaba',
+      desde: `${ano - 6}-12-01`,
+      dias: 7,
+      valoracion: 'bien',
+    },
+  ])
 
   // Tomas: los días pasados, casi todo «Tomada» (una se le olvidó). Hoy, lo que ya tocaba, salvo la metformina.
   const ahora = new Date()
@@ -534,8 +820,129 @@ async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<st
     momentos: [],
     otroHorario: 'Solo si empieza una migraña',
     paraQue: 'La migraña',
+    fechaInicio: `${ano - 5}-02-01`,
+    activo: 1,
+    valoracion: 'bien',
+    efectos: 'Si lo toma al principio, en una hora se le pasa.',
+  })
+  await guardarMedicamento(id, {
+    nombre: 'Paracetamol 1 g',
+    dosis: '1 comprimido',
+    momentos: [],
+    otroHorario: 'Cada 8 horas si hay fiebre',
+    paraQue: 'La fiebre de la gripe',
+    fechaInicio: dia(-2),
     activo: 1,
   })
+
+  // Lo que fue probando para la migraña hasta dar con el sumatriptán, y lo de cada primavera.
+  await historialMedicacion(id, [
+    {
+      nombre: 'Ibuprofeno 600 mg',
+      dosis: '1 comprimido',
+      paraQue: 'La migraña',
+      desde: `${ano - 11}-03-01`,
+      dias: 700,
+      valoracion: 'regular',
+      motivoFin: 'no-funciono',
+      efectos: 'Solo le quitaba el dolor si lo tomaba muy al principio.',
+    },
+    {
+      nombre: 'Naproxeno 550 mg',
+      dosis: '1 comprimido',
+      paraQue: 'La migraña',
+      desde: `${ano - 9}-02-01`,
+      dias: 365,
+      valoracion: 'regular',
+      motivoFin: 'no-funciono',
+      efectos: 'Algo mejor que el ibuprofeno, pero le molestaba el estómago.',
+    },
+    {
+      nombre: 'Omeprazol 20 mg',
+      dosis: '1 cápsula en ayunas',
+      paraQue: 'Proteger el estómago (con el naproxeno)',
+      desde: `${ano - 9}-02-01`,
+      dias: 365,
+      valoracion: 'bien',
+    },
+    {
+      nombre: 'Zolmitriptán 2,5 mg',
+      dosis: '1 comprimido al empezar la migraña',
+      paraQue: 'La migraña',
+      familia: 'Antimigrañoso (triptán)',
+      desde: `${ano - 7}-01-10`,
+      dias: 700,
+      valoracion: 'regular',
+      motivoFin: 'efectos',
+      efectos: 'Le quitaba la migraña, pero la dejaba muy cansada y con presión en el pecho.',
+    },
+    {
+      nombre: 'Topiramato 25 mg',
+      dosis: '1 comprimido por la noche',
+      paraQue: 'Prevenir la migraña',
+      familia: 'Antiepiléptico (preventivo de migraña)',
+      desde: `${ano - 4}-05-01`,
+      dias: 150,
+      valoracion: 'mal',
+      motivoFin: 'efectos',
+      efectos: 'Hormigueo en las manos y le costaba encontrar las palabras.',
+    },
+    {
+      nombre: 'Amitriptilina 10 mg',
+      dosis: '1 comprimido por la noche',
+      paraQue: 'Prevenir la migraña',
+      familia: 'Antidepresivo (preventivo de migraña)',
+      desde: `${ano - 3}-10-01`,
+      dias: 240,
+      valoracion: 'bien',
+      efectos: 'Tuvo la mitad de migrañas. Algo de boca seca.',
+    },
+    {
+      nombre: 'Cetirizina 10 mg',
+      dosis: '1 comprimido al día',
+      paraQue: 'Alergia al polen',
+      desde: `${ano - 3}-04-01`,
+      dias: 60,
+      valoracion: 'regular',
+      efectos: 'Le daba sueño en el trabajo.',
+    },
+    { nombre: 'Ebastina 20 mg', dosis: '1 comprimido al día', paraQue: 'Alergia al polen', desde: `${ano - 2}-04-01`, dias: 60, valoracion: 'bien' },
+    {
+      nombre: 'Ebastina 20 mg',
+      dosis: '1 comprimido al día',
+      paraQue: 'Alergia al polen',
+      desde: `${ano - 1}-03-25`,
+      dias: 70,
+      valoracion: 'bien',
+      efectos: 'Sin sueño y sin estornudos.',
+    },
+    {
+      nombre: 'Amoxicilina 500 mg',
+      dosis: '1 cápsula cada 8 horas',
+      paraQue: 'Faringitis',
+      desde: `${ano - 8}-11-20`,
+      dias: 7,
+      valoracion: 'bien',
+    },
+    {
+      nombre: 'Amoxicilina/clavulánico 875/125 mg',
+      dosis: '1 comprimido cada 8 horas',
+      paraQue: 'Sinusitis',
+      desde: `${ano - 3}-01-08`,
+      dias: 10,
+      valoracion: 'regular',
+      efectos: 'Le dio diarrea; se curó la sinusitis.',
+    },
+    {
+      nombre: 'Hierro (sulfato ferroso) 80 mg',
+      dosis: '1 comprimido en ayunas',
+      paraQue: 'Anemia por reglas abundantes',
+      desde: `${ano - 4}-09-01`,
+      dias: 90,
+      valoracion: 'regular',
+      efectos: 'Estreñimiento, pero subió la hemoglobina.',
+    },
+  ])
   await guardarHistorial(id, {
     fecha: `${ano - 11}-03-01`,
     tipo: 'diagnostico',

@@ -9,6 +9,8 @@ import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { bajaEnCurso, borrarBaja, darAlta, diasDeBaja, diasEnElAno, guardarBaja, listarBajas, revisarBaja, TIPOS_ALTA, TIPOS_BAJA } from '../db/bajas'
 import type { Baja, TipoAlta, TipoBaja } from '../db/tipos'
 import { fechaLarga, hoyISO } from '../utils/fechas'
+import { leerParteBaja } from '../utils/leerDocumentos'
+import { textoLectura, useLecturaPdf } from '../componentes/useLecturaPdf'
 
 const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`
 
@@ -137,6 +139,25 @@ function FormularioBaja(props: { perfilId: string; baja?: Baja; onTerminar: () =
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
+  // Con el PDF del parte, se rellena lo que trae (sin IA). Solo lo que esté en blanco, para no pisar lo escrito.
+  const lectura = useLecturaPdf(pendientes, leerParteBaja, (p) => {
+    const siVacio = (poner: (f: (v: string) => string) => void, valor?: string) => valor && poner((v) => v || valor)
+    if (!b && p.inicio) setInicio(p.inicio)
+    if (!b && p.tipo) setTipo(p.tipo)
+    siVacio(setMotivo, p.motivo)
+    siVacio(setDiagnostico, p.diagnostico)
+    siVacio(setMedico, p.medico)
+    siVacio(setCentro, p.centro)
+    siVacio(setEmpresa, p.empresa)
+    if (p.confirmacion) setConfirmaciones((l) => (l.includes(p.confirmacion!) ? l : [...l, p.confirmacion!].sort()))
+    if (p.fin) setFin((f) => f || p.fin!)
+    if (p.tipoAlta) setTipoAlta(p.tipoAlta)
+    if (p.proximaRevision && p.clase !== 'alta') siVacio(setNotas, `Próxima revisión: ${fechaLarga(p.proximaRevision)}`)
+    const cual = { baja: 'el parte de baja', confirmacion: 'el parte de confirmación', alta: 'el parte de alta' }[p.clase]
+    return `📄 He leído ${cual} y he copiado lo que trae. Revísalo antes de guardar.`
+  })
+  const avisoLectura = textoLectura(lectura)
+
   async function guardar(e: FormEvent) {
     e.preventDefault()
     const datos = {
@@ -162,6 +183,14 @@ function FormularioBaja(props: { perfilId: string; baja?: Baja; onTerminar: () =
   return (
     <form className="pila" onSubmit={guardar} noValidate>
       <h2>📋 {b ? 'Cambiar baja' : 'Nueva baja'}</h2>
+      <p className="texto-suave" style={{ margin: 0 }}>
+        Si tienes el parte en PDF, adjúntalo abajo y la app copia los datos por ti (también los de confirmación y el de alta).
+      </p>
+      {avisoLectura && (
+        <p className={avisoLectura.clase} role="status" style={{ margin: 0 }}>
+          {avisoLectura.texto}
+        </p>
+      )}
 
       <label className="campo">
         <span>Día de la baja</span>

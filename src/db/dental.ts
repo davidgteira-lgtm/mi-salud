@@ -86,9 +86,19 @@ export function dentistasUsados(lista: Pick<TratamientoDental, 'dentista'>[]): s
 }
 
 /** Lo pagado en el dentista: en total y en un año. */
-export function gastoDental(lista: Pick<TratamientoDental, 'fecha' | 'importe'>[], ano: number): { total: number; ano: number } {
-  const suma = (l: typeof lista) => l.reduce((s, t) => s + (t.importe ?? 0), 0)
-  return { total: suma(lista), ano: suma(lista.filter((t) => t.fecha.startsWith(String(ano)))) }
+/** Lo pagado en el dentista: el total y lo de cada año (del más reciente al más antiguo, solo años con algo pagado). */
+export function gastoDental(lista: Pick<TratamientoDental, 'fecha' | 'importe'>[]): {
+  total: number
+  porAno: { ano: string; importe: number; veces: number }[]
+} {
+  const anos = new Map<string, { importe: number; veces: number }>()
+  for (const t of lista) {
+    if (!t.importe) continue
+    const a = anos.get(t.fecha.slice(0, 4)) ?? { importe: 0, veces: 0 }
+    anos.set(t.fecha.slice(0, 4), { importe: a.importe + t.importe, veces: a.veces + 1 })
+  }
+  const porAno = [...anos].map(([ano, a]) => ({ ano, ...a })).sort((a, b) => b.ano.localeCompare(a.ano))
+  return { total: porAno.reduce((s, a) => s + a.importe, 0), porAno }
 }
 
 /**
@@ -105,7 +115,9 @@ export function leerImporte(texto: string): number | null {
 
 /** «1.250,50 €» */
 export function euros(n: number): string {
-  return `${n.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`
+  // Con el punto de los miles también en 4 cifras («2.060 €»), que es como se lee en una factura.
+  const [entero, decimales] = n.toFixed(Number.isInteger(n) ? 0 : 2).split('.')
+  return `${entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}${decimales ? `,${decimales}` : ''} €`
 }
 
 /** Lo que se paga en el dentista lleva factura; las revisiones y el aviso de caries, no. */

@@ -22,6 +22,50 @@ export function QueSeEnvia() {
   )
 }
 
+/** Qué hace la IA, cuánto cuesta y cómo conseguir la clave, paso a paso. */
+export function ComoActivarIa() {
+  return (
+    <div className="pila" style={{ gap: 10 }}>
+      <p style={{ margin: 0 }}>
+        <strong>Sin IA la app funciona igual:</strong> lo apuntas tú, y los PDF de análisis, de la receta de las gafas y de los partes de
+        baja los lee igualmente ella sola.
+      </p>
+      <p style={{ margin: 0 }}>
+        <strong>Con IA</strong>, además, la app lee cualquier informe, receta, foto o nota de voz y te deja el registro rellenado: tú solo
+        lo revisas y dices que sí.
+      </p>
+      <p className="aviso aviso-cita" style={{ margin: 0 }}>
+        💶 <strong>¿Cuánto cuesta?</strong> Se paga lo que se usa: unos 3 o 4 céntimos por documento. Con <strong>5 € de saldo</strong>{' '}
+        tienes para <strong>más de 100 documentos</strong> (es aproximado: depende de lo largo que sea cada uno).
+      </p>
+      <strong>Cómo activarla, paso a paso:</strong>
+      <ol className="pasos-ia">
+        <li>
+          Entra en{' '}
+          <a href="https://console.anthropic.com" target="_blank" rel="noreferrer">
+            console.anthropic.com
+          </a>{' '}
+          y crea una cuenta con tu correo. Es la de Anthropic, la empresa de la IA Claude (distinta de la de claude.ai).
+        </li>
+        <li>
+          En <strong>«Billing»</strong> (facturación), añade saldo: con 5 € basta para empezar. Pon un límite de gasto al mes y así estás
+          tranquilo.
+        </li>
+        <li>
+          En <strong>«API Keys»</strong>, pulsa <strong>«Create Key»</strong>, ponle un nombre (por ejemplo, «Mi Salud») y copia la clave:
+          empieza por <code>sk-ant-</code>.
+        </li>
+        <li>
+          Vuelve aquí, pégala abajo y pulsa <strong>«Guardar y probar»</strong>. Se queda guardada solo en este móvil.
+        </li>
+      </ol>
+      <p className="texto-suave" style={{ margin: 0 }}>
+        Si te ha instalado la app un familiar, puede hacerlo él y poner la clave en tu móvil.
+      </p>
+    </div>
+  )
+}
+
 export function AjustesIa() {
   const [guardada, setGuardada] = useState(() => obtenerClave())
   const [clave, setClave] = useState('')
@@ -49,12 +93,17 @@ export function AjustesIa() {
   }
 
   return (
-    <section className="tarjeta pila" aria-label="Inteligencia artificial">
-      <h2>🤖 Inteligencia artificial</h2>
+    <section className="tarjeta pila" aria-label="Inteligencia artificial" id="ia">
+      <h2>🤖 Que la app lea tus documentos (IA)</h2>
       <p style={{ margin: 0 }}>
-        La IA lee tus informes, recetas y fotos, y te propone qué apuntar en cada sección. Es opcional: la app funciona igual sin ella.
+        La IA lee tus informes, recetas y fotos, y te propone qué apuntar en cada sección. Es opcional.
       </p>
-      <QueSeEnvia />
+      <details>
+        <summary>
+          <strong>Qué se envía y qué no</strong>
+        </summary>
+        <QueSeEnvia />
+      </details>
 
       {guardada ? (
         <>
@@ -74,10 +123,7 @@ export function AjustesIa() {
         </>
       ) : (
         <>
-          <p className="texto-suave" style={{ margin: 0 }}>
-            Para activarla hace falta una clave de Anthropic (se saca en console.anthropic.com y se paga según el uso: unos céntimos por
-            documento). Puede ponerla quien te haya instalado la app.
-          </p>
+          <ComoActivarIa />
           <label className="campo">
             <span>Clave de la IA</span>
             <input
