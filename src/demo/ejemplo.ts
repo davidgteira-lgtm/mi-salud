@@ -24,6 +24,9 @@ import { buscarPrueba } from '../utils/analisis'
 import { sumarDias } from '../utils/ciclos'
 import { hoyISO } from '../utils/fechas'
 import { crearPdf, fechaEs, type LineaPdf } from './pdfFalso'
+// Fotos libres de derechos: Pexels 5959404 (Rosa) y Unsplash photo-1758600433363-eaa446a1ac84 (Lucía).
+import fotoLucia from '../assets/perfiles/lucia.jpg'
+import fotoRosa from '../assets/perfiles/rosa.jpg'
 
 /** Números «al azar» pero siempre los mismos, para que el ejemplo no cambie cada vez. */
 function azar(semilla: number) {
@@ -38,6 +41,9 @@ function azar(semilla: number) {
 function r(nombre: string, valor: number, unidad: string, refMin?: number, refMax?: number): ResultadoAnalisis {
   return { clave: buscarPrueba(nombre, unidad)?.clave, nombre, valor, unidad: unidad || undefined, refMin, refMax }
 }
+
+/** Sube cuando los datos de ejemplo cambian: así se avisa a quien tenga los antiguos. */
+export const VERSION_EJEMPLOS = 4
 
 export async function borrarEjemplos(): Promise<void> {
   const ejemplos = await db.perfiles.filter((p) => !!p.ejemplo).toArray()
@@ -63,10 +69,12 @@ export async function crearEjemplos(hoy: FechaISO = hoyISO()): Promise<string> {
 async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<string> {
   const p = await crearPerfil({
     nombre: 'Rosa (ejemplo)',
+    foto: await fotoDe(fotoRosa),
     fechaNacimiento: `${ano - 71}-11-12`,
     sexo: 'mujer',
     color: '#6a5fa8',
     ejemplo: true,
+    ejemploVersion: VERSION_EJEMPLOS,
   })
   const id = p.id
 
@@ -499,10 +507,12 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
 async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<string> {
   const p = await crearPerfil({
     nombre: 'Lucía (ejemplo)',
+    foto: await fotoDe(fotoLucia),
     fechaNacimiento: `${ano - 42}-09-03`,
     sexo: 'mujer',
     color: '#2f7f8f',
     ejemplo: true,
+    ejemploVersion: VERSION_EJEMPLOS,
   })
   const id = p.id
 
@@ -805,4 +815,14 @@ const CONCEPTO_FACTURA: Partial<Record<string, string>> = {
   limpieza: 'Limpieza dental',
   protesis: 'Dentadura postiza',
   ortodoncia: 'Ortodoncia',
+}
+
+/** La foto de una persona de ejemplo (de la carpeta de la app). Si no se puede cargar, se queda sin foto. */
+async function fotoDe(url: string): Promise<Blob | undefined> {
+  try {
+    const r = await fetch(url)
+    return r.ok ? await r.blob() : undefined
+  } catch {
+    return undefined
+  }
 }

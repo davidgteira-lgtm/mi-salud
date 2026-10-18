@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { crearEjemplos, VERSION_EJEMPLOS } from '../demo/ejemplo'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useNavigate } from 'react-router'
 import { AvatarEditable } from '../componentes/AvatarEditable'
@@ -159,6 +161,33 @@ function PanelHoy({ perfil }: { perfil: Perfil }) {
     </section>
   )
 }
+
+/** Si los datos de ejemplo de este móvil son de una versión anterior, se pueden volver a crear con lo nuevo. */
+function ActualizarEjemplos({ nombre }: { nombre: string }) {
+  const { elegir } = usePerfilActivo()
+  const [trabajando, setTrabajando] = useState(false)
+  return (
+    <div className="aviso pila" role="status" style={{ gap: 8 }}>
+      <span>🔄 Hay datos de ejemplo nuevos (facturas, partes de baja, informes…).</span>
+      <button
+        className="boton"
+        disabled={trabajando}
+        onClick={async () => {
+          setTrabajando(true)
+          await crearEjemplos()
+          // Se vuelve a la misma persona de ejemplo, ya con los datos nuevos.
+          const misma = await db.perfiles.filter((p) => !!p.ejemplo && p.nombre === nombre).first()
+          if (misma) elegir(misma.id)
+          // Al borrar la antigua, la app vuelve a «¿Quién eres?»: se regresa al inicio de la nueva.
+          window.location.hash = '#/inicio'
+          setTrabajando(false)
+        }}
+      >
+        {trabajando ? 'Actualizando…' : 'Actualizar los ejemplos'}
+      </button>
+    </div>
+  )
+}
 /** Pantalla de inicio con los banners de todas las secciones. */
 export function Inicio() {
   const { perfil, elegir } = usePerfilActivo()
@@ -191,6 +220,7 @@ export function Inicio() {
           añade la tuya.
         </p>
       )}
+      {perfil.ejemplo && (perfil.ejemploVersion ?? 1) < VERSION_EJEMPLOS && <ActualizarEjemplos nombre={perfil.nombre} />}
 
       <Link to="/buscar" className="entrada-buscar">
         <span aria-hidden="true">🔎</span> Buscar en todo lo apuntado

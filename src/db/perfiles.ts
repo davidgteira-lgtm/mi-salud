@@ -5,7 +5,7 @@ import { TABLAS_DE_PERFIL, type Perfil } from './tipos'
 /** Colores para distinguir a cada persona; todos se leen bien con letra blanca. */
 export const COLORES_PERFIL = ['#2e5c8a', '#4f7fb5', '#6a5fa8', '#2f7f8f', '#a8566f', '#4f7f5f']
 
-export type DatosPerfil = Pick<Perfil, 'nombre' | 'fechaNacimiento' | 'sexo' | 'apuntarRegla' | 'ejemplo' | 'foto' | 'color'>
+export type DatosPerfil = Pick<Perfil, 'nombre' | 'fechaNacimiento' | 'sexo' | 'apuntarRegla' | 'ejemplo' | 'ejemploVersion' | 'foto' | 'color'>
 
 export async function crearPerfil(datos: DatosPerfil): Promise<Perfil> {
   const nombre = datos.nombre.trim()

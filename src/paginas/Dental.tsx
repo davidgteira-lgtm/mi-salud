@@ -84,6 +84,9 @@ export function Dental({ perfilId }: { perfilId: string }) {
               {historia.map((t) => (
                 <li key={t.id}>
                   {infoTipoDental(t.tipo).texto} · {fechaLarga(t.fecha)}
+                  {t.importe !== undefined && ` · ${euros(t.importe)}`}
+                  {/* La factura y los documentos de ese tratamiento, aquí mismo. */}
+                  <VerAdjuntos registroId={t.id} />
                 </li>
               ))}
             </ul>
