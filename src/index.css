@@ -630,3 +630,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
   .resumen { box-shadow: none; padding: 0; font-size: 11pt; }
   .resumen-cabecera h1 { font-size: 16pt; }
 }
+
+/* ---------- Salud ocular ---------- */
+.ojo { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid var(--borde); }
+.ojo-valores { display: flex; flex-wrap: wrap; gap: 6px 14px; font-weight: 700; font-size: 1.05rem; }
+.ojo-valores small { font-weight: 600; color: var(--texto-suave); font-size: 0.8rem; }
+.ojo-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ojo-campos .campo small { font-size: 0.75rem; }

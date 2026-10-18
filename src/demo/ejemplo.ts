@@ -9,12 +9,14 @@ import { guardarMedida } from '../db/constantes'
 import { guardarDatos } from '../db/datosSanitarios'
 import { db } from '../db/db'
 import { guardarDental } from '../db/dental'
+import { guardarBaja } from '../db/bajas'
 import { guardarHistorial } from '../db/historial'
 import { dejarDeTomar, guardarMedicamento } from '../db/medicamentos'
+import { guardarOcular } from '../db/ojos'
 import { borrarPerfil, crearPerfil } from '../db/perfiles'
 import { guardarPropia, guardarRegistro } from '../db/revisiones'
 import { guardarContacto } from '../db/telefonos'
-import type { FechaISO, ResultadoAnalisis } from '../db/tipos'
+import type { FechaISO, ResultadoAnalisis, RevisionOcular } from '../db/tipos'
 import { buscarPrueba } from '../utils/analisis'
 import { sumarDias } from '../utils/ciclos'
 import { hoyISO } from '../utils/fechas'
@@ -386,6 +388,30 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
   await guardarContacto(id, { tipo: 'hospital', nombre: 'Hospital Ejemplo (citas)', telefono: '910 000 001' })
   await guardarContacto(id, { tipo: 'farmacia', nombre: 'Farmacia Ejemplo', telefono: '910 000 002' })
 
+
+  // Vista: hipermetropía y vista cansada que suben; en la última, la presión del ojo algo alta.
+  await guardarOcular(id, {
+    fecha: dia(-1500),
+    tipo: 'gafas',
+    donde: 'Óptica Ejemplo',
+    derecho: { esfera: 1, adicion: 2, agudeza: 1, presion: 17 },
+    izquierdo: { esfera: 1.25, adicion: 2, agudeza: 1, presion: 18 },
+  })
+  await guardarOcular(id, {
+    fecha: dia(-760),
+    tipo: 'gafas',
+    donde: 'Óptica Ejemplo',
+    derecho: { esfera: 1.25, adicion: 2.25, agudeza: 0.9, presion: 19 },
+    izquierdo: { esfera: 1.5, adicion: 2.25, agudeza: 0.9, presion: 20 },
+  })
+  await guardarOcular(id, {
+    fecha: dia(-40),
+    tipo: 'revision',
+    donde: 'Hospital Ejemplo, Oftalmología',
+    derecho: { esfera: 1.5, cilindro: -0.5, eje: 90, adicion: 2.5, agudeza: 0.8, presion: 22 },
+    izquierdo: { esfera: 1.75, adicion: 2.5, agudeza: 0.8, presion: 20 },
+    diagnostico: 'Principio de cataratas. Vigilar la presión del ojo derecho.',
+  })
   return id
 }
 
@@ -476,5 +502,57 @@ async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<st
     notas: 'Todo normal.',
   })
   await guardarDental(id, { fecha: dia(-150), tipo: 'limpieza', dientes: [] })
+
+  // Vista: miopía que ha ido subiendo con los años.
+  const miopia: [number, number, number, RevisionOcular['tipo']][] = [
+    [-3650, -1, -0.75, 'gafas'],
+    [-2555, -1.5, -1.25, 'gafas'],
+    [-1460, -2, -1.75, 'gafas'],
+    [-730, -2.25, -2, 'lentillas'],
+    [-60, -2.5, -2.25, 'lentillas'],
+  ]
+  for (const [n, od, oi, tipo] of miopia) {
+    await guardarOcular(id, {
+      fecha: dia(n),
+      tipo,
+      donde: 'Óptica Ejemplo',
+      derecho: { esfera: od, agudeza: 1 },
+      izquierdo: { esfera: oi, ...(n >= -1460 ? { cilindro: -0.5, eje: 180 } : {}), agudeza: 1 },
+    })
+  }
+
+  // Bajas: una de hace dos años con su alta, la de la migraña (con la regla) y una gripe que sigue abierta.
+  await guardarBaja(id, {
+    inicio: dia(-700),
+    fin: dia(-686),
+    tipo: 'comun',
+    motivo: 'Lumbalgia',
+    diagnostico: 'Dolor lumbar agudo',
+    medico: 'Dra. Ejemplo',
+    centro: 'Centro de Salud Ejemplo',
+    empresa: 'Empresa Ejemplo S. L.',
+    confirmaciones: [dia(-693)],
+    tipoAlta: 'curacion',
+  })
+  await guardarBaja(id, {
+    inicio: dia(-40),
+    fin: dia(-37),
+    tipo: 'comun',
+    motivo: 'Migraña',
+    medico: 'Dra. Ejemplo',
+    centro: 'Centro de Salud Ejemplo',
+    empresa: 'Empresa Ejemplo S. L.',
+    confirmaciones: [],
+    tipoAlta: 'mejoria',
+  })
+  await guardarBaja(id, {
+    inicio: dia(-2),
+    tipo: 'comun',
+    motivo: 'Gripe',
+    medico: 'Dra. Ejemplo',
+    centro: 'Centro de Salud Ejemplo',
+    empresa: 'Empresa Ejemplo S. L.',
+    confirmaciones: [],
+  })
   return id
 }

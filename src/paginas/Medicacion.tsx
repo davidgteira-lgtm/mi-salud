@@ -1,3 +1,5 @@
+import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
+import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { Confirmar } from '../componentes/Confirmar'
@@ -39,9 +41,7 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
   }
 
   // Medicamentos que se toman ahora y chocan con alguna alergia.
-  const conflictos = actuales
-    .map((m) => ({ m, avisos: comprobarAlergias(m.nombre, alergias) }))
-    .filter((c) => c.avisos.length > 0)
+  const conflictos = actuales.map((m) => ({ m, avisos: comprobarAlergias(m.nombre, alergias) })).filter((c) => c.avisos.length > 0)
 
   return (
     <div className="pila">
@@ -90,8 +90,7 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
       </button>
 
       <p className="texto-suave" style={{ fontSize: '0.85rem' }}>
-        La familia y el uso de cada medicamento son orientativos. Ante cualquier duda, pregunta a tu médico o en la
-        farmacia.
+        La familia y el uso de cada medicamento son orientativos. Ante cualquier duda, pregunta a tu médico o en la farmacia.
       </p>
 
       {dejando && (
@@ -157,6 +156,7 @@ function TarjetaMedicamento(props: {
           ⚠️ {a.motivo}
         </p>
       ))}
+      <VerAdjuntos registroId={m.id} />
       {m.activo ? (
         <button className="boton boton-secundario" onClick={props.onDejar}>
           Ya no lo tomo
@@ -173,12 +173,7 @@ function TarjetaMedicamento(props: {
   )
 }
 
-function FormularioMedicamento(props: {
-  perfilId: string
-  medicamento?: Medicamento
-  alergias: Alergia[]
-  onTerminar: () => void
-}) {
+function FormularioMedicamento(props: { perfilId: string; medicamento?: Medicamento; alergias: Alergia[]; onTerminar: () => void }) {
   const m = props.medicamento
   const [nombre, setNombre] = useState(m?.nombre ?? '')
   const [dosis, setDosis] = useState(m?.dosis ?? '')
@@ -191,6 +186,7 @@ function FormularioMedicamento(props: {
   const [fechaFin, setFechaFin] = useState(m?.fechaFin ?? '')
   const [notas, setNotas] = useState(m?.notas ?? '')
   const [error, setError] = useState('')
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
   const [confirmarAlergia, setConfirmarAlergia] = useState(false)
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
@@ -229,7 +225,8 @@ function FormularioMedicamento(props: {
       setConfirmarAlergia(true)
       return
     }
-    await guardarMedicamento(props.perfilId, datos(), m?.id)
+    const id = await guardarMedicamento(props.perfilId, datos(), m?.id)
+    await guardarAdjuntos(props.perfilId, id, pendientes)
     props.onTerminar()
   }
 
@@ -254,8 +251,7 @@ function FormularioMedicamento(props: {
 
       {avisos.map((a) => (
         <p key={a.alergia.id} role="alert" className={a.nivel === 'alto' ? 'aviso aviso-error' : 'aviso'} style={{ margin: 0 }}>
-          ⚠️ <strong>{a.nivel === 'alto' ? '¡Cuidado!' : 'Precaución.'}</strong> {a.motivo} Consulta con tu médico antes
-          de tomarlo.
+          ⚠️ <strong>{a.nivel === 'alto' ? '¡Cuidado!' : 'Precaución.'}</strong> {a.motivo} Consulta con tu médico antes de tomarlo.
         </p>
       ))}
 
@@ -325,6 +321,13 @@ function FormularioMedicamento(props: {
         <textarea rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Me lo mandó la doctora de digestivo…" />
       </label>
 
+      <EditorAdjuntos
+        registroId={m?.id}
+        pendientes={pendientes}
+        onPendientes={setPendientes}
+        ayuda="Por ejemplo, la receta, una foto de la caja o del prospecto."
+      />
+
       {error && <p className="aviso aviso-error">{error}</p>}
 
       <button type="submit" className="boton">
@@ -365,9 +368,7 @@ function FormularioMedicamento(props: {
           }}
           onNo={() => setPreguntarBorrar(false)}
         >
-          <p>
-            Se borrará del todo, también del historial. Si solo lo has dejado de tomar, es mejor pulsar «Ya no lo tomo».
-          </p>
+          <p>Se borrará del todo, también del historial. Si solo lo has dejado de tomar, es mejor pulsar «Ya no lo tomo».</p>
         </Confirmar>
       )}
     </form>

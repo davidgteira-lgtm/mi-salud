@@ -2,6 +2,7 @@
 // vienen en los informes, convertir unidades y decir si un valor está dentro de lo normal.
 import { PRUEBAS, type PruebaLab, type Referencia } from '../datos/pruebasLaboratorio'
 import type { Sexo } from '../db/tipos'
+import { esFechaValida } from './fechas'
 import { leerNumero, type Lectura } from './numeros'
 import { normalizar } from './texto'
 
@@ -233,9 +234,23 @@ export function leerInforme(texto: string): { filas: FilaLeida[]; fecha?: string
     const fila = leerFila(nombre, m.groups.res, m.groups.resto)
     if (fila) filas.push(fila)
   }
-  const f = /fecha[^\d]{0,12}(\d{1,2})\/(\d{1,2})\/(\d{4})/i.exec(texto)
-  const fecha = f ? `${f[3]}-${f[2].padStart(2, '0')}-${f[1].padStart(2, '0')}` : undefined
-  return { filas, fecha }
+  return { filas, fecha: fechaDelInforme(texto) }
+}
+
+/**
+ * La fecha del análisis: la de la extracción o la muestra si aparece; si no, la primera «Fecha…».
+ * Nunca la de nacimiento.
+ */
+function fechaDelInforme(texto: string): string | undefined {
+  const candidatas: { fecha: string; preferida: boolean }[] = []
+  for (const m of texto.matchAll(/fecha([^\d\n]{0,30}?)(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/gi)) {
+    const delante = normalizar(m[1])
+    if (delante.includes('nac')) continue
+    const fecha = `${m[4]}-${m[3].padStart(2, '0')}-${m[2].padStart(2, '0')}`
+    if (!esFechaValida(fecha)) continue
+    candidatas.push({ fecha, preferida: /extrac|toma|muestra|recog/.test(delante) })
+  }
+  return (candidatas.find((c) => c.preferida) ?? candidatas[0])?.fecha
 }
 
 /** Separa "mg/dl (74 - 100) *" en unidad y referencia, y decide si la fila es una prueba. */

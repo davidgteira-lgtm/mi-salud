@@ -312,7 +312,7 @@ describe('la app', () => {
 
     await usuario.click(await screen.findByRole('link', { name: /Análisis/ }))
     await usuario.click(await screen.findByRole('button', { name: /Añadir análisis/ }))
-    await usuario.click(screen.getByRole('button', { name: /Pegar el texto del informe/ }))
+    await usuario.click(screen.getByRole('button', { name: /Pega aquí su texto/ }))
     // Informe inventado.
     fireEvent.change(screen.getByLabelText(/Pega aquí el texto/), {
       target: { value: 'Fecha: 05/03/2026\nGlucosa 104 mg/dl (74 - 100)\nHDL Colesterol 55 mg/dl (Sup. 40)\nCEA < 1.50 ng/ml (Inf. 5)' },

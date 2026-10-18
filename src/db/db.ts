@@ -16,6 +16,8 @@ import type {
   Perfil,
   RegistroBase,
   RegistroRevision,
+  RevisionOcular,
+  Baja,
   TratamientoDental,
 } from './tipos'
 
@@ -36,6 +38,8 @@ export class BaseDeDatos extends Dexie {
   /** Ficha de emergencia y datos sanitarios: una por persona. */
   fichas!: Table<DatosSanitarios, string>
   telefonos!: Table<Contacto, string>
+  ojos!: Table<RevisionOcular, string>
+  bajas!: Table<Baja, string>
   ciclos!: Table<Ciclo, string>
 
   constructor(nombre = 'mi-salud') {
@@ -66,6 +70,11 @@ export class BaseDeDatos extends Dexie {
     // Versión 4: salud dental. La tabla estaba vacía; ahora se busca por fecha.
     this.version(4).stores({
       dental: 'id, perfilId, [perfilId+fecha]',
+    })
+    // Versión 5: salud ocular y bajas médicas.
+    this.version(5).stores({
+      ojos: 'id, perfilId, [perfilId+fecha]',
+      bajas: 'id, perfilId, [perfilId+inicio]',
     })
   }
 }

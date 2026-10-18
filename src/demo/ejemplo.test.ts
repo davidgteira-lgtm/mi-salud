@@ -87,3 +87,15 @@ describe('personas de ejemplo', () => {
     expect(await db.citas.count()).toBe(0)
   })
 })
+
+describe('secciones nuevas en el ejemplo', () => {
+  it('Rosa tiene revisiones de la vista y Lucía bajas (una abierta)', async () => {
+    const rosaId = await crearEjemplos(HOY)
+    const lucia = (await db.perfiles.filter((p) => p.nombre.startsWith('Lucía')).first())!
+    expect(await db.ojos.where('perfilId').equals(rosaId).count()).toBe(3)
+    expect(await db.ojos.where('perfilId').equals(lucia.id).count()).toBe(5)
+    const bajas = await db.bajas.where('perfilId').equals(lucia.id).toArray()
+    expect(bajas).toHaveLength(3)
+    expect(bajas.filter((b) => !b.fin).map((b) => b.motivo)).toEqual(['Gripe'])
+  })
+})

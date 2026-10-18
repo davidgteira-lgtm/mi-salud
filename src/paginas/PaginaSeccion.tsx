@@ -20,11 +20,14 @@ const Medicacion = cargar(() => import('./Medicacion'), 'Medicacion')
 const MisDatos = cargar(() => import('./MisDatos'), 'MisDatos')
 const Revisiones = cargar(() => import('./Revisiones'), 'Revisiones')
 const Telefonos = cargar(() => import('./Telefonos'), 'Telefonos')
+const Ojos = cargar(() => import('./Ojos'), 'Ojos')
+const Bajas = cargar(() => import('./Bajas'), 'Bajas')
 
 /** El contenido de cada sección que ya está hecha. Las demás se ven "en construcción". */
 const CONTENIDO: Record<string, Contenido> = {
   alergias: Alergias,
   analisis: Analisis,
+  bajas: Bajas,
   citas: Citas,
   constantes: Constantes,
   dental: Dental,
@@ -32,6 +35,7 @@ const CONTENIDO: Record<string, Contenido> = {
   emergencia: Emergencia,
   historial: Historial,
   medicacion: Medicacion,
+  ojos: Ojos,
   revisiones: Revisiones,
   telefonos: Telefonos,
 }

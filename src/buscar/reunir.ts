@@ -3,6 +3,8 @@ import { infoConstante } from '../datos/constantes'
 import { infoTipoDental, nombreDiente } from '../datos/dientes'
 import { PRUEBAS } from '../datos/pruebasLaboratorio'
 import { textoValor } from '../db/constantes'
+import { diasDeBaja } from '../db/bajas'
+import { explicarOjo, TIPOS_OCULAR } from '../db/ojos'
 import { db } from '../db/db'
 import { TIPOS_HISTORIAL } from '../db/historial'
 import { TIPOS_CONTACTO } from '../db/telefonos'
@@ -14,7 +16,7 @@ import type { Documento } from './consulta'
 const juntar = (...partes: (string | undefined | false | null)[]) => partes.filter(Boolean).join(' · ')
 
 export async function reunirDocumentos(perfilId: string): Promise<Documento[]> {
-  const [medicamentos, citas, historial, analiticas, alergias, revisiones, dental, constantes, telefonos, ciclos, adjuntos] =
+  const [medicamentos, citas, historial, analiticas, alergias, revisiones, dental, constantes, telefonos, ciclos, adjuntos, ojos, bajas] =
     await Promise.all([
       db.medicamentos.where('perfilId').equals(perfilId).toArray(),
       db.citas.where('perfilId').equals(perfilId).toArray(),
@@ -27,6 +29,8 @@ export async function reunirDocumentos(perfilId: string): Promise<Documento[]> {
       db.telefonos.where('perfilId').equals(perfilId).toArray(),
       db.ciclos.where('perfilId').equals(perfilId).toArray(),
       db.adjuntos.where('perfilId').equals(perfilId).toArray(),
+      db.ojos.where('perfilId').equals(perfilId).toArray(),
+      db.bajas.where('perfilId').equals(perfilId).toArray(),
     ])
   const hoy = hoyISO()
   const docs: Documento[] = []
@@ -176,6 +180,30 @@ export async function reunirDocumentos(perfilId: string): Promise<Documento[]> {
       titulo: t.nombre,
       detalle: t.telefono,
       textos: ['Teléfono', TIPOS_CONTACTO.find((x) => x.valor === t.tipo)?.texto ?? '', t.direccion ?? ''],
+    })
+  }
+
+  for (const r of ojos) {
+    const tipo = TIPOS_OCULAR.find((t) => t.valor === r.tipo)
+    anadir({
+      seccion: 'ojos',
+      id: r.id,
+      icono: '👁️',
+      titulo: `${tipo?.texto ?? 'Revisión de la vista'} del ${fechaLarga(r.fecha)}`,
+      detalle: juntar(r.donde, r.diagnostico),
+      fecha: r.fecha,
+      textos: ['Vista ojos', `Ojo derecho: ${explicarOjo(r.derecho)}`, `Ojo izquierdo: ${explicarOjo(r.izquierdo)}`, r.notas ?? ''],
+    })
+  }
+  for (const b of bajas) {
+    anadir({
+      seccion: 'bajas',
+      id: b.id,
+      icono: '📋',
+      titulo: `Baja: ${b.motivo}`,
+      detalle: juntar(`Del ${fechaLarga(b.inicio)}`, b.fin ? `al ${fechaLarga(b.fin)}` : 'sigue de baja', `${diasDeBaja(b)} días`),
+      fecha: b.inicio,
+      textos: ['Baja médica incapacidad', b.diagnostico ?? '', b.medico ?? '', b.centro ?? '', b.empresa ?? '', b.notas ?? ''],
     })
   }
 

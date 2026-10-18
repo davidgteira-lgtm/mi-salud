@@ -1,3 +1,5 @@
+import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
+import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { Confirmar } from '../componentes/Confirmar'
@@ -28,8 +30,8 @@ export function Alergias({ perfilId }: { perfilId: string }) {
     <div className="pila">
       {alergias.length === 0 && (
         <p className="aviso">
-          No has apuntado ninguna alergia ni intolerancia. Si tienes alguna, añádela: la app te avisará si apuntas un
-          medicamento que te puede sentar mal.
+          No has apuntado ninguna alergia ni intolerancia. Si tienes alguna, añádela: la app te avisará si apuntas un medicamento que te
+          puede sentar mal.
         </p>
       )}
 
@@ -66,9 +68,8 @@ function TarjetaAlergia({ alergia, onCambiar }: { alergia: Alergia; onCambiar: (
       <strong style={{ fontSize: '1.3rem' }}>{alergia.nombre}</strong>
       {alergia.reaccion && <span>Qué te pasó: {alergia.reaccion}</span>}
       {alergia.desde && <span className="texto-suave">Desde el {fechaLarga(alergia.desde)}</span>}
-      {ejemplos.length > 0 && (
-        <span className="texto-suave">Te avisaremos también con: {ejemplos.join(', ')}…</span>
-      )}
+      {ejemplos.length > 0 && <span className="texto-suave">Te avisaremos también con: {ejemplos.join(', ')}…</span>}
+      <VerAdjuntos registroId={alergia.id} />
       <button className="enlace" onClick={onCambiar}>
         Cambiar o borrar
       </button>
@@ -85,9 +86,11 @@ function FormularioAlergia(props: { perfilId: string; alergia?: Alergia; onTermi
   const [reaccion, setReaccion] = useState(alergia?.reaccion ?? '')
   const [desde, setDesde] = useState(alergia?.desde ?? '')
   const [error, setError] = useState('')
+  const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
-  const sugerencias = tipo === 'medicamento' ? sugerirMedicamentos(nombre, 4).filter((s) => s.toLowerCase() !== nombre.trim().toLowerCase()) : []
+  const sugerencias =
+    tipo === 'medicamento' ? sugerirMedicamentos(nombre, 4).filter((s) => s.toLowerCase() !== nombre.trim().toLowerCase()) : []
   const reconocido = tipo === 'medicamento' && nombre.trim() ? resolverAlergia(nombre) : undefined
   const ejemplos = tipo === 'medicamento' ? ejemplosDeAviso(nombre) : []
 
@@ -99,7 +102,8 @@ function FormularioAlergia(props: { perfilId: string; alergia?: Alergia; onTermi
       setError(problema)
       return
     }
-    await guardarAlergia(props.perfilId, datos, alergia?.id)
+    const id = await guardarAlergia(props.perfilId, datos, alergia?.id)
+    await guardarAdjuntos(props.perfilId, id, pendientes)
     props.onTerminar()
   }
 
@@ -158,6 +162,13 @@ function FormularioAlergia(props: { perfilId: string; alergia?: Alergia; onTermi
         <span>¿Desde cuándo? (si lo sabes)</span>
         <input type="date" value={desde} max={hoyISO()} onChange={(e) => setDesde(e.target.value)} />
       </label>
+
+      <EditorAdjuntos
+        registroId={alergia?.id}
+        pendientes={pendientes}
+        onPendientes={setPendientes}
+        ayuda="Por ejemplo, el informe del alergólogo o una foto de la reacción."
+      />
 
       {error && <p className="aviso aviso-error">{error}</p>}
 

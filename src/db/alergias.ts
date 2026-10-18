@@ -1,4 +1,5 @@
 // Guardar, cambiar y borrar las alergias e intolerancias de cada persona.
+import { borrarAdjuntosDe } from './adjuntos'
 import { db, nuevoId } from './db'
 import type { Alergia, Gravedad } from './tipos'
 
@@ -35,8 +36,12 @@ export async function guardarAlergia(perfilId: string, datos: DatosAlergia, id?:
   return nueva.id
 }
 
-export function borrarAlergia(id: string): Promise<void> {
-  return db.alergias.delete(id)
+/** La borra junto con sus fotos y documentos. */
+export async function borrarAlergia(id: string): Promise<void> {
+  await db.transaction('rw', db.alergias, db.adjuntos, async () => {
+    await borrarAdjuntosDe(id)
+    await db.alergias.delete(id)
+  })
 }
 
 const ORDEN_GRAVEDAD: Gravedad[] = ['grave', 'moderada', 'leve', 'desconocida']
@@ -45,7 +50,6 @@ const ORDEN_GRAVEDAD: Gravedad[] = ['grave', 'moderada', 'leve', 'desconocida']
 export async function listarAlergias(perfilId: string): Promise<Alergia[]> {
   const lista = await db.alergias.where('perfilId').equals(perfilId).toArray()
   return lista.sort(
-    (a, b) =>
-      ORDEN_GRAVEDAD.indexOf(a.gravedad) - ORDEN_GRAVEDAD.indexOf(b.gravedad) || a.nombre.localeCompare(b.nombre, 'es'),
+    (a, b) => ORDEN_GRAVEDAD.indexOf(a.gravedad) - ORDEN_GRAVEDAD.indexOf(b.gravedad) || a.nombre.localeCompare(b.nombre, 'es'),
   )
 }

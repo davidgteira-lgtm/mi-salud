@@ -70,6 +70,13 @@ export const SECCIONES: Seccion[] = [
     fondo: 'linear-gradient(135deg, #b9c7dd, #6b80a3)',
   },
   {
+    clave: 'bajas',
+    titulo: 'Bajas médicas',
+    descripcion: 'Bajas, partes de confirmación y altas',
+    icono: '📋',
+    fondo: 'linear-gradient(135deg, #c7c2e8, #6a5fa8)',
+  },
+  {
     clave: 'analisis',
     titulo: 'Análisis',
     descripcion: 'Resultados de sangre y orina, y cómo van cambiando',
@@ -92,6 +99,13 @@ export const SECCIONES: Seccion[] = [
     icono: '🦷',
     imagen: fotoDental,
     fondo: 'linear-gradient(135deg, #a8d4f0, #4a8ab0)',
+  },
+  {
+    clave: 'ojos',
+    titulo: 'Salud ocular',
+    descripcion: 'Graduación de la vista y cómo va cambiando',
+    icono: '👁️',
+    fondo: 'linear-gradient(135deg, #9fd8cf, #2f8577)',
   },
   {
     clave: 'constantes',

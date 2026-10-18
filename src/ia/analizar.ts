@@ -26,7 +26,7 @@ export function sePuedeAnalizar(a: Pick<Adjunto, 'tipo' | 'archivo' | 'transcrip
   return { si: false, motivo: 'De momento la IA solo lee fotos y PDF. Haz una foto del documento.' }
 }
 
-export async function bloquesDeAdjunto(a: Adjunto): Promise<Bloque[]> {
+export async function bloquesDeAdjunto(a: Pick<Adjunto, 'tipo' | 'archivo' | 'transcripcion'>): Promise<Bloque[]> {
   const puede = sePuedeAnalizar(a)
   if (!puede.si) throw new ErrorIa(puede.motivo)
   if (a.tipo === 'voz') return [{ type: 'text', text: `Nota de voz de la persona (pasada a texto):\n«${a.transcripcion!.trim()}»` }]

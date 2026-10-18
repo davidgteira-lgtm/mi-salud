@@ -200,6 +200,8 @@ export const TABLAS_DE_PERFIL = [
   'fichas',
   'telefonos',
   'ciclos',
+  'ojos',
+  'bajas',
 ] as const
 
 export type TablaDePerfil = (typeof TABLAS_DE_PERFIL)[number]
@@ -275,4 +277,60 @@ export interface DatosSanitarios extends RegistroBase {
   /** Cosas que deben saber en urgencias: «Llevo marcapasos», «Uso audífono»… */
   avisos?: string
   contactos: ContactoEmergencia[]
+}
+
+/** La graduación de un ojo. En dioptrías, como la escribe la óptica o el oftalmólogo. */
+export interface GraduacionOjo {
+  /** Negativa = miopía; positiva = hipermetropía. */
+  esfera?: number
+  /** Astigmatismo (se suele escribir en negativo). */
+  cilindro?: number
+  /** Eje del astigmatismo, de 0 a 180 grados. */
+  eje?: number
+  /** Vista cansada (presbicia): lo que se suma para ver de cerca. */
+  adicion?: number
+  /** Agudeza visual, de 0,05 a 1,5 (1 = vista completa). */
+  agudeza?: number
+  /** Presión del ojo (mmHg). */
+  presion?: number
+}
+
+/** Una revisión de la vista: graduación de cada ojo, para ver cómo cambia. */
+export interface RevisionOcular extends RegistroBase {
+  fecha: FechaISO
+  tipo: 'gafas' | 'lentillas' | 'revision'
+  /** Óptica u oftalmólogo. */
+  donde?: string
+  derecho: GraduacionOjo
+  izquierdo: GraduacionOjo
+  /** Lo que dijeron: cataratas, glaucoma, ojo vago… */
+  diagnostico?: string
+  notas?: string
+}
+
+export type TipoBaja = 'comun' | 'accidente-no-laboral' | 'accidente-laboral' | 'enfermedad-profesional'
+export type TipoAlta = 'curacion' | 'mejoria' | 'inspeccion' | 'incapacidad' | 'otra'
+
+/** Un parte de baja, de confirmación o de alta. */
+export interface ParteBaja {
+  fecha: FechaISO
+  tipo: 'confirmacion' | 'alta'
+  notas?: string
+}
+
+/** Una baja médica (incapacidad temporal), con sus partes y su alta. */
+export interface Baja extends RegistroBase {
+  inicio: FechaISO
+  /** Día del alta. Si no hay, la baja sigue. */
+  fin?: FechaISO
+  tipo: TipoBaja
+  motivo: string
+  diagnostico?: string
+  medico?: string
+  centro?: string
+  empresa?: string
+  /** Partes de confirmación (el de alta va en `fin` y `tipoAlta`). */
+  confirmaciones: FechaISO[]
+  tipoAlta?: TipoAlta
+  notas?: string
 }

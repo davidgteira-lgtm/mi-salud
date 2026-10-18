@@ -17,6 +17,8 @@ export function EditorAdjuntos(props: {
   registroId?: string
   pendientes: AdjuntoNuevo[]
   onPendientes: (lista: AdjuntoNuevo[]) => void
+  titulo?: string
+  ayuda?: string
 }) {
   const guardados = useLiveQuery(() => (props.registroId ? listarAdjuntos(props.registroId) : []), [props.registroId])
   const camara = useRef<HTMLInputElement>(null)
@@ -41,8 +43,8 @@ export function EditorAdjuntos(props: {
 
   return (
     <div className="campo">
-      <span>Fotos, documentos y notas de voz</span>
-      <small>Por ejemplo, una foto del informe o una nota de voz contando lo que te dijeron.</small>
+      <span>{props.titulo ?? 'Fotos, documentos y notas de voz'}</span>
+      <small>{props.ayuda ?? 'Por ejemplo, una foto del informe o una nota de voz contando lo que te dijeron.'}</small>
       <div className="botones-adjuntos">
         <button type="button" className="boton boton-secundario" onClick={() => camara.current?.click()}>
           📷 Hacer foto

@@ -1,11 +1,16 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
 import { COLOR_SERIE } from '../componentes/coloresGrafica'
 import { Confirmar } from '../componentes/Confirmar'
 import { Grafica } from '../componentes/Grafica'
 import { PRUEBAS, type PruebaLab } from '../datos/pruebasLaboratorio'
-import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
+import { guardarAdjuntos, nombrePorDefecto, type AdjuntoNuevo } from '../db/adjuntos'
+import { QueSeEnvia } from '../componentes/AjustesIa'
+import { bloquesDeAdjunto, pedirPropuestas } from '../ia/analizar'
+import { aceptarIa, ErrorIa, iaAceptada, obtenerClave } from '../ia/claude'
+import { reducirFoto } from '../utils/imagen'
+import { textoDePdf } from '../utils/leerPdf'
 import {
   borrarAnalitica,
   claveDeGrupo,
@@ -67,8 +72,8 @@ export function Analisis({ perfilId }: { perfilId: string }) {
 
       {analiticas.length === 0 ? (
         <p className="aviso">
-          Aquí guardarás tus análisis de sangre y orina. Si el informe es un PDF, puedes copiar su texto y pegarlo: la app
-          separa cada resultado.
+          Aquí guardarás tus análisis de sangre y orina. Si el informe es un PDF, puedes copiar su texto y pegarlo: la app separa cada
+          resultado.
         </p>
       ) : (
         <div className="pestanas" role="tablist">
@@ -97,8 +102,7 @@ export function Analisis({ perfilId }: { perfilId: string }) {
       {pestana === 'evolucion' && analiticas.length > 0 && <Evolucion perfilId={perfilId} grupo={grupo} onGrupo={setGrupo} />}
 
       <p className="texto-suave" style={{ fontSize: '0.85rem' }}>
-        «Normal», «alto» o «bajo» se calcula con la referencia que pone en tu informe. Interpreta los resultados siempre con
-        tu médico.
+        «Normal», «alto» o «bajo» se calcula con la referencia que pone en tu informe. Interpreta los resultados siempre con tu médico.
       </p>
     </div>
   )
@@ -117,14 +121,10 @@ function TarjetaAnalitica(props: { analitica: Analitica; onCambiar: () => void; 
         {fuera.length === 0 ? (
           <span className="nivel nivel-bien">✓ Todos dentro de lo normal</span>
         ) : (
-          <span className="nivel nivel-fuera">
-            ▲ {fuera.length} fuera de lo normal
-          </span>
+          <span className="nivel nivel-fuera">▲ {fuera.length} fuera de lo normal</span>
         )}
       </span>
-      {fuera.length > 0 && !abierta && (
-        <span className="texto-suave">{fuera.map((r) => r.nombre).join(', ')}</span>
-      )}
+      {fuera.length > 0 && !abierta && <span className="texto-suave">{fuera.map((r) => r.nombre).join(', ')}</span>}
       {a.notas && <span>{a.notas}</span>}
       <VerAdjuntos registroId={a.id} />
       <button className="boton boton-secundario" onClick={() => setAbierta(!abierta)} aria-expanded={abierta}>
@@ -180,7 +180,11 @@ function Evolucion(props: { perfilId: string; grupo?: string; onGrupo: (g: strin
         </select>
       </label>
 
-      {catalogo && <p className="aviso aviso-cita" style={{ margin: 0 }}>{catalogo.explicacion}</p>}
+      {catalogo && (
+        <p className="aviso aviso-cita" style={{ margin: 0 }}>
+          {catalogo.explicacion}
+        </p>
+      )}
 
       {datos && datos.puntos.length >= 2 && elegida && (
         <Grafica
@@ -304,17 +308,21 @@ function FormularioAnalitica(props: { perfilId: string; analitica?: Analitica; o
   const [textoPegado, setTextoPegado] = useState('')
   const [avisoPegado, setAvisoPegado] = useState('')
   const [pendientes, setPendientes] = useState<AdjuntoNuevo[]>([])
+  const [leyendo, setLeyendo] = useState(false)
+  const [sinLeer, setSinLeer] = useState<{ tipo: 'foto' | 'documento'; archivo: Blob }>()
+  const [permisoIa, setPermisoIa] = useState(false)
+  const subirPdf = useRef<HTMLInputElement>(null)
+  const subirFoto = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const [preguntarBorrar, setPreguntarBorrar] = useState(false)
 
-  const cambiar = (id: string, cambios: Partial<FilaFormulario>) => setFilas((fs) => fs.map((f) => (f.id === id ? { ...f, ...cambios } : f)))
+  const cambiar = (id: string, cambios: Partial<FilaFormulario>) =>
+    setFilas((fs) => fs.map((f) => (f.id === id ? { ...f, ...cambios } : f)))
 
-  function leerPegado() {
-    const { filas: leidas, fecha: fechaInforme } = leerInforme(textoPegado)
-    if (leidas.length === 0) {
-      setAvisoPegado('No he encontrado resultados en ese texto. Comprueba que has copiado la parte de las pruebas.')
-      return
-    }
+  /** Lee un texto de informe y añade sus resultados. Devuelve cuántos ha leído. */
+  function leerTexto(texto: string, deDonde: string): number {
+    const { filas: leidas, fecha: fechaInforme } = leerInforme(texto)
+    if (leidas.length === 0) return 0
     setFilas((fs) => [
       ...fs,
       ...leidas.map((l) => ({
@@ -327,9 +335,70 @@ function FormularioAnalitica(props: { perfilId: string; analitica?: Analitica; o
       })),
     ])
     if (fechaInforme) setFecha(fechaInforme)
-    setAvisoPegado(`He leído ${leidas.length} resultados${fechaInforme ? ` y la fecha (${fechaLarga(fechaInforme)})` : ''}. Revísalos antes de guardar.`)
+    setAvisoPegado(
+      `He leído ${leidas.length} resultados ${deDonde}${fechaInforme ? ` y la fecha (${fechaLarga(fechaInforme)})` : ''}. Revísalos antes de guardar.`,
+    )
+    return leidas.length
+  }
+
+  function leerPegado() {
+    if (leerTexto(textoPegado, 'del texto') === 0) {
+      setAvisoPegado('No he encontrado resultados en ese texto. Comprueba que has copiado la parte de las pruebas.')
+      return
+    }
     setTextoPegado('')
     setPegando(false)
+  }
+
+  /** Al subir el informe: el PDF se lee en el propio móvil; si no se puede (foto o escaneado), se ofrece la IA. */
+  async function alSubirInforme(archivo: File, deCamara: boolean) {
+    setAvisoPegado('')
+    setSinLeer(undefined)
+    const tipo = deCamara || archivo.type.startsWith('image/') ? 'foto' : 'documento'
+    const guardado = tipo === 'foto' ? await reducirFoto(archivo, 1800, 0.82) : archivo
+    const nombre = deCamara ? nombrePorDefecto('foto') : archivo.name
+    let leidos = 0
+    if (tipo === 'documento' && archivo.type === 'application/pdf') {
+      setLeyendo(true)
+      try {
+        leidos = leerTexto(await textoDePdf(archivo), 'del PDF')
+      } catch {
+        leidos = 0
+      } finally {
+        setLeyendo(false)
+      }
+    }
+    // El informe se guarda con el análisis (y si ya está leído, no vuelve a salir en «Por revisar»).
+    setPendientes((ps) => [...ps, { clave: crypto.randomUUID(), tipo, nombre, archivo: guardado, leido: leidos > 0 }])
+    if (leidos === 0) setSinLeer({ tipo, archivo: guardado })
+  }
+
+  /** Para fotos y PDF escaneados: que lo lea la IA (si está activada). */
+  async function leerConIa() {
+    const clave = obtenerClave()
+    if (!sinLeer || !clave || !perfil) return
+    setLeyendo(true)
+    setAvisoPegado('')
+    try {
+      const lectura = await pedirPropuestas(clave, perfil, await bloquesDeAdjunto({ ...sinLeer, transcripcion: undefined }))
+      const analiticas = lectura.propuestas.filter((p) => p.tipo === 'analitica')
+      const resultados = analiticas.flatMap((p) => p.resultados)
+      if (resultados.length === 0) {
+        setAvisoPegado('La IA no ha encontrado resultados de análisis en este archivo.')
+        return
+      }
+      setFilas((fs) => [...fs, ...resultados.map(filaDesdeResultado)])
+      const primera = analiticas[0]
+      if (primera.fecha) setFecha(primera.fecha)
+      if (primera.centro && !centro) setCentro(primera.centro)
+      setPendientes((ps) => ps.map((p) => (p.archivo === sinLeer.archivo ? { ...p, leido: true } : p)))
+      setSinLeer(undefined)
+      setAvisoPegado(`La IA ha leído ${resultados.length} resultados. Revísalos bien antes de guardar: a veces se equivoca.`)
+    } catch (e) {
+      setAvisoPegado(e instanceof ErrorIa ? e.message : 'No se ha podido leer con la IA. Prueba otra vez.')
+    } finally {
+      setLeyendo(false)
+    }
   }
 
   async function guardar(e: FormEvent) {
@@ -368,13 +437,77 @@ function FormularioAnalitica(props: { perfilId: string; analitica?: Analitica; o
         <input type="text" value={centro} onChange={(e) => setCentro(e.target.value)} />
       </label>
 
-      <EditorAdjuntos registroId={a?.id} pendientes={pendientes} onPendientes={setPendientes} />
+      <section className="tarjeta pila subir-informe" aria-label="Subir el informe">
+        <strong style={{ fontSize: '1.15rem' }}>📄 ¿Tienes el informe?</strong>
+        <span className="texto-suave">Súbelo y la app leerá los resultados por ti. Luego solo tienes que revisarlos.</span>
+        <button type="button" className="boton" disabled={leyendo} onClick={() => subirPdf.current?.click()}>
+          {leyendo ? 'Leyendo el informe…' : '📄 Subir el PDF del análisis'}
+        </button>
+        <button type="button" className="boton boton-secundario" disabled={leyendo} onClick={() => subirFoto.current?.click()}>
+          📷 Hacer una foto del informe
+        </button>
+        <input
+          ref={subirPdf}
+          type="file"
+          accept="application/pdf,image/*"
+          hidden
+          aria-label="Elegir el PDF del análisis"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) alSubirInforme(f, false)
+            e.target.value = ''
+          }}
+        />
+        <input
+          ref={subirFoto}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) alSubirInforme(f, true)
+            e.target.value = ''
+          }}
+        />
+        {sinLeer && (
+          <div className="aviso pila" role="status" style={{ margin: 0, gap: 10 }}>
+            <span>
+              {sinLeer.tipo === 'foto'
+                ? 'He guardado la foto del informe.'
+                : 'He guardado el PDF, pero no tiene texto que la app pueda leer (parece escaneado).'}{' '}
+              {obtenerClave()
+                ? 'La IA puede leer los resultados por ti.'
+                : 'Para que se lean solos, activa la IA en Ajustes. Si no, añade los resultados a mano abajo.'}
+            </span>
+            {obtenerClave() && (
+              <button type="button" className="boton" disabled={leyendo} onClick={() => (iaAceptada() ? leerConIa() : setPermisoIa(true))}>
+                {leyendo ? 'Leyendo…' : '🤖 Leerlo con la IA'}
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+      {permisoIa && (
+        <Confirmar
+          titulo="Antes de leerlo con la IA"
+          textoSi="Entendido, leerlo"
+          onSi={() => {
+            aceptarIa(true)
+            setPermisoIa(false)
+            leerConIa()
+          }}
+          onNo={() => setPermisoIa(false)}
+        >
+          <QueSeEnvia />
+        </Confirmar>
+      )}
 
       <h3 style={{ margin: '8px 0 0' }}>Resultados ({filas.length})</h3>
 
       {!pegando ? (
-        <button type="button" className="boton boton-secundario" onClick={() => setPegando(true)}>
-          📋 Pegar el texto del informe
+        <button type="button" className="enlace" style={{ alignSelf: 'flex-start' }} onClick={() => setPegando(true)}>
+          ¿El PDF no se lee bien? Pega aquí su texto
         </button>
       ) : (
         <div className="tarjeta pila">
@@ -410,10 +543,20 @@ function FormularioAnalitica(props: { perfilId: string; analitica?: Analitica; o
       <button
         type="button"
         className="boton boton-secundario"
-        onClick={() => setFilas((fs) => [...fs, { id: crypto.randomUUID(), nombre: '', valor: '', unidad: '', referencia: '', abierta: true }])}
+        onClick={() =>
+          setFilas((fs) => [...fs, { id: crypto.randomUUID(), nombre: '', valor: '', unidad: '', referencia: '', abierta: true }])
+        }
       >
         ➕ Añadir un resultado a mano
       </button>
+
+      <EditorAdjuntos
+        registroId={a?.id}
+        pendientes={pendientes}
+        onPendientes={setPendientes}
+        titulo="Archivos del análisis"
+        ayuda="Aquí queda guardado el informe que has subido. Puedes añadir más fotos o una nota de voz."
+      />
 
       <label className="campo">
         <span>Notas (si quieres)</span>
@@ -480,7 +623,11 @@ function FilaResultado(props: {
         <div>
           <div style={{ fontWeight: 700 }}>{f.nombre || 'Sin nombre'}</div>
           <div>{resumen ?? <span className="nivel nivel-urgente">⚠ Revisar</span>}</div>
-          {f.referencia && <div className="texto-suave" style={{ fontSize: '0.85rem' }}>Referencia: {f.referencia}</div>}
+          {f.referencia && (
+            <div className="texto-suave" style={{ fontSize: '0.85rem' }}>
+              Referencia: {f.referencia}
+            </div>
+          )}
         </div>
         <button type="button" className="enlace" onClick={() => props.onCambiar({ abierta: true })} aria-label={`Corregir ${f.nombre}`}>
           Corregir
@@ -493,12 +640,22 @@ function FilaResultado(props: {
     <div className="tarjeta pila" style={{ gap: 10 }}>
       <label className="campo">
         <span>Prueba</span>
-        <input type="text" value={f.nombre} onChange={(e) => props.onCambiar({ nombre: e.target.value })} placeholder="Glucosa, colesterol…" />
+        <input
+          type="text"
+          value={f.nombre}
+          onChange={(e) => props.onCambiar({ nombre: e.target.value })}
+          placeholder="Glucosa, colesterol…"
+        />
       </label>
       {sugerencias.length > 0 && (
         <div className="sugerencias">
           {sugerencias.map((s) => (
-            <button key={s.clave} type="button" className="opcion" onClick={() => props.onCambiar({ nombre: s.nombre, unidad: f.unidad || s.unidad })}>
+            <button
+              key={s.clave}
+              type="button"
+              className="opcion"
+              onClick={() => props.onCambiar({ nombre: s.nombre, unidad: f.unidad || s.unidad })}
+            >
               {s.nombre}
             </button>
           ))}
@@ -507,7 +664,12 @@ function FilaResultado(props: {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <label className="campo">
           <span>Resultado</span>
-          <input type="text" inputMode="decimal" value={f.valor} onChange={(e) => props.onCambiar({ valor: e.target.value, elegido: undefined })} />
+          <input
+            type="text"
+            inputMode="decimal"
+            value={f.valor}
+            onChange={(e) => props.onCambiar({ valor: e.target.value, elegido: undefined })}
+          />
         </label>
         <label className="campo">
           <span>Unidad</span>
@@ -519,13 +681,21 @@ function FilaResultado(props: {
         <input type="text" value={f.referencia} onChange={(e) => props.onCambiar({ referencia: e.target.value })} placeholder="74 - 100" />
       </label>
       {!f.referencia && orientativa && (
-        <button type="button" className="enlace" onClick={() => props.onCambiar({ referencia: textoReferencia(orientativa.min, orientativa.max) })}>
+        <button
+          type="button"
+          className="enlace"
+          onClick={() => props.onCambiar({ referencia: textoReferencia(orientativa.min, orientativa.max) })}
+        >
           Usar una referencia orientativa ({textoRango(orientativa, num)}) si el informe no la trae
         </button>
       )}
 
       <div role="status">
-        {'error' in i && <p className="aviso aviso-error" style={{ margin: 0 }}>{i.error}</p>}
+        {'error' in i && (
+          <p className="aviso aviso-error" style={{ margin: 0 }}>
+            {i.error}
+          </p>
+        )}
         {'dudas' in i && i.dudas && (
           <div className="aviso" style={{ margin: 0 }}>
             ¿Cuál es el valor?

@@ -1,4 +1,5 @@
 // Guardar los medicamentos de cada persona: los que toma ahora y los que tomó antes.
+import { borrarAdjuntosDe } from './adjuntos'
 import { hoyISO } from '../utils/fechas'
 import { buscarMedicamento } from '../utils/medicamentos'
 import { db, nuevoId } from './db'
@@ -64,13 +65,20 @@ export async function volverATomar(id: string, fecha: string = hoyISO()): Promis
   return guardarMedicamento(anterior.perfilId, { ...anterior, fechaInicio: fecha, fechaFin: undefined, activo: 1 })
 }
 
-export function borrarMedicamento(id: string): Promise<void> {
-  return db.medicamentos.delete(id)
+/** Lo borra junto con sus fotos y documentos. */
+export async function borrarMedicamento(id: string): Promise<void> {
+  await db.transaction('rw', db.medicamentos, db.adjuntos, async () => {
+    await borrarAdjuntosDe(id)
+    await db.medicamentos.delete(id)
+  })
 }
 
 /** Lo que toma ahora (por nombre) o lo que tomó antes (lo más reciente primero). */
 export async function listarMedicamentos(perfilId: string, activos: boolean): Promise<Medicamento[]> {
-  const lista = await db.medicamentos.where('[perfilId+activo]').equals([perfilId, activos ? 1 : 0]).toArray()
+  const lista = await db.medicamentos
+    .where('[perfilId+activo]')
+    .equals([perfilId, activos ? 1 : 0])
+    .toArray()
   if (activos) return lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
   return lista.sort((a, b) => (b.fechaFin ?? '').localeCompare(a.fechaFin ?? ''))
 }

@@ -11,6 +11,8 @@ export interface AdjuntoNuevo {
   nombre: string
   archivo: Blob
   transcripcion?: string
+  /** Si la app ya lo ha leído al subirlo (así no sale en «Por revisar»). */
+  leido?: boolean
 }
 
 /** Decide si un archivo es foto o documento por su tipo. */
@@ -41,7 +43,7 @@ export async function guardarAdjuntos(perfilId: string, registroId: string, nuev
       nombre: n.nombre,
       archivo: n.archivo,
       transcripcion: n.transcripcion,
-      analisis: 'pendiente' as const,
+      analisis: n.leido ? ('hecho' as const) : ('pendiente' as const),
       creadoEn: ahora,
       actualizadoEn: ahora,
     })),
