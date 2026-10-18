@@ -44,6 +44,10 @@ export interface Adjunto extends RegistroBase {
   archivo: Blob
   /** Si la IA ya lo ha leído o está pendiente (por ejemplo, porque no había internet). */
   analisis: 'pendiente' | 'hecho' | 'no'
+  /** Lo que la IA dijo que es (para recordarlo y para buscar). */
+  resumenIa?: string
+  /** En las notas de voz: lo que se dijo, escrito (si el móvil pudo pasarlo a texto). */
+  transcripcion?: string
 }
 
 export type Gravedad = 'leve' | 'moderada' | 'grave' | 'desconocida'

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { AjustesIa } from '../componentes/AjustesIa'
 import { Confirmar } from '../componentes/Confirmar'
 import {
   crearCopia,
@@ -40,11 +41,13 @@ export function Ajustes() {
         </section>
       )}
 
+      {apartado !== 'recuperar' && <AjustesIa />}
+
       <section className="tarjeta">
         <h2>🔒 ¿Dónde están mis datos?</h2>
         <p>
-          Todo lo que guardas está <strong>solo en este móvil</strong>. No se envía a ningún sitio y nadie más puede
-          verlo.
+          Todo lo que guardas está <strong>solo en este móvil</strong>. Nadie más puede verlo. Solo sale de él lo que tú decides analizar
+          con la IA (si la activas).
         </p>
         <p style={{ margin: 0 }}>
           Por eso es importante hacer copias de seguridad: si pierdes el móvil o se rompe, con la copia lo recuperas

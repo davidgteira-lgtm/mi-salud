@@ -98,11 +98,11 @@ export function EditorAdjuntos(props: {
       {grabando && (
         <GrabadoraVoz
           onCancelar={() => setGrabando(false)}
-          onListo={(audio) => {
+          onListo={(audio, transcripcion) => {
             setGrabando(false)
             props.onPendientes([
               ...props.pendientes,
-              { clave: crypto.randomUUID(), tipo: 'voz', nombre: nombrePorDefecto('voz'), archivo: audio },
+              { clave: crypto.randomUUID(), tipo: 'voz', nombre: nombrePorDefecto('voz'), archivo: audio, transcripcion },
             ])
           }}
         />

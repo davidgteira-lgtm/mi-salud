@@ -10,6 +10,7 @@ export interface AdjuntoNuevo {
   tipo: Adjunto['tipo']
   nombre: string
   archivo: Blob
+  transcripcion?: string
 }
 
 /** Decide si un archivo es foto o documento por su tipo. */
@@ -39,6 +40,7 @@ export async function guardarAdjuntos(perfilId: string, registroId: string, nuev
       tipo: n.tipo,
       nombre: n.nombre,
       archivo: n.archivo,
+      transcripcion: n.transcripcion,
       analisis: 'pendiente' as const,
       creadoEn: ahora,
       actualizadoEn: ahora,

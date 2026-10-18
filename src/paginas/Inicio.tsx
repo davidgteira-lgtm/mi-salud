@@ -4,6 +4,8 @@ import { AvatarEditable } from '../componentes/AvatarEditable'
 import { Banner } from '../componentes/Banner'
 import { diasDesdeUltimaCopia } from '../copia/recordatorio'
 import { listarProximas } from '../db/citas'
+import { adjuntosPendientes, sePuedeAnalizar } from '../ia/analizar'
+import { obtenerClave } from '../ia/claude'
 import { usePerfilActivo } from '../perfilActivo'
 import { SECCIONES } from '../secciones'
 import { cuandoFalta, diasEntre, hoyISO } from '../utils/fechas'
@@ -31,6 +33,26 @@ function AvisoProximasCitas({ perfilId }: { perfilId: string }) {
   )
 }
 
+/** Entrada a la IA: solo si está activada en este móvil. */
+function EntradaIa({ perfilId }: { perfilId: string }) {
+  const sinLeer = useLiveQuery(async () => (await adjuntosPendientes(perfilId)).filter((a) => sePuedeAnalizar(a).si).length, [perfilId])
+  if (!obtenerClave()) return null
+  return (
+    <Link to="/revisar" className="banner-ia">
+      <span style={{ fontSize: '2rem' }} aria-hidden="true">
+        🤖
+      </span>
+      <span>
+        Cuéntaselo a la app
+        <small>
+          {sinLeer
+            ? `${sinLeer === 1 ? 'Tienes 1 archivo' : `Tienes ${sinLeer} archivos`} sin leer por la IA`
+            : 'La IA lo apunta por ti y tú lo confirmas'}
+        </small>
+      </span>
+    </Link>
+  )
+}
 /** Pantalla de inicio con los banners de todas las secciones. */
 export function Inicio() {
   const { perfil, elegir } = usePerfilActivo()
@@ -58,6 +80,8 @@ export function Inicio() {
       {!perfil.foto && <p className="aviso aviso-cita">📷 Toca la cámara de arriba para poner tu foto.</p>}
 
       <AvisoProximasCitas perfilId={perfil.id} />
+
+      <EntradaIa perfilId={perfil.id} />
 
       {(dias === null || dias > 30) && (
         <Link to="/ajustes" className="aviso" style={{ textDecoration: 'none', display: 'block' }}>

@@ -208,6 +208,51 @@ describe('la app', () => {
     expect((await db.revisiones.toArray())[0]).toMatchObject({ tipo: 'vacuna', clave: 'neumococo' })
   })
 
+  it('IA: se cuenta algo, propone y se apunta solo lo que se confirma', async () => {
+    localStorage.setItem('mi-salud:clave-ia', 'sk-ant-prueba-0000000000000000000000')
+    const respuesta = {
+      content: [
+        {
+          type: 'tool_use',
+          name: 'proponer_registros',
+          input: {
+            resumen: 'Te han cambiado el protector de estómago.',
+            propuestas: [
+              { tipo: 'medicamento', explicacion: 'Te lo ha recetado la médica.', datos: { nombre: 'Pantoprazol', dosis: '40 mg', momentos: ['desayuno'] } },
+              { tipo: 'cita', explicacion: 'Revisión.', datos: { fecha: '2027-02-01', especialidad: 'Digestivo' } },
+            ],
+          },
+        },
+      ],
+    }
+    const fetch = vi.fn(async () => new Response(JSON.stringify(respuesta)))
+    vi.stubGlobal('fetch', fetch)
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Cuéntaselo a la app/ }))
+    await usuario.type(await screen.findByLabelText('Qué ha pasado'), 'Me han puesto pantoprazol de 40')
+    await usuario.click(screen.getByRole('button', { name: /Analizar/ }))
+    // La primera vez explica qué se envía.
+    expect(await screen.findByRole('dialog', { name: 'Antes de analizar' })).toHaveTextContent('Anthropic')
+    await usuario.click(screen.getByRole('button', { name: 'Entendido, analizar' }))
+
+    expect(await screen.findByText(/Te han cambiado el protector/)).toBeInTheDocument()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    const [apuntarMed] = screen.getAllByRole('button', { name: /Apuntar/ })
+    await usuario.click(apuntarMed)
+    expect(await screen.findByText('✓ Apuntado en Medicación.')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: /^✗ No$/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Terminar' }))
+
+    expect((await db.medicamentos.toArray()).map((m) => m.nombre)).toEqual(['Pantoprazol'])
+    expect(await db.citas.count()).toBe(0)
+    vi.unstubAllGlobals()
+  })
+
   it('pega el texto de un informe y guarda los resultados', async () => {
     const usuario = userEvent.setup()
     render(<App />)
