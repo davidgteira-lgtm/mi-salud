@@ -64,15 +64,6 @@ export const SECCIONES: Seccion[] = [
     fondo: 'linear-gradient(135deg, #b9c7dd, #6b80a3)',
   },
   {
-    clave: 'bajas',
-    titulo: 'Bajas médicas',
-    descripcion: 'Bajas, partes de confirmación y altas',
-    icono: '📋',
-    imagen: fotoBajas,
-    encuadre: 'center 45%',
-    fondo: 'linear-gradient(135deg, #c7c2e8, #6a5fa8)',
-  },
-  {
     clave: 'analisis',
     titulo: 'Análisis',
     descripcion: 'Resultados de sangre y orina, y cómo van cambiando',
@@ -112,6 +103,15 @@ export const SECCIONES: Seccion[] = [
     icono: '❤️',
     imagen: fotoConstantes,
     fondo: 'linear-gradient(135deg, #f0b8c4, #b0607a)',
+  },
+  {
+    clave: 'bajas',
+    titulo: 'Bajas médicas',
+    descripcion: 'Bajas, partes de confirmación y altas',
+    icono: '📋',
+    imagen: fotoBajas,
+    encuadre: 'center 45%',
+    fondo: 'linear-gradient(135deg, #c7c2e8, #6a5fa8)',
   },
   {
     clave: 'alergias',
