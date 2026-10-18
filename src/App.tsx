@@ -9,6 +9,7 @@ import { FormularioPerfil } from './paginas/FormularioPerfil'
 import { Inicio } from './paginas/Inicio'
 import { PaginaSeccion } from './paginas/PaginaSeccion'
 import { PorRevisar } from './paginas/PorRevisar'
+import { Buscar } from './paginas/Buscar'
 import { usePerfilActivo } from './perfilActivo'
 import { ProveedorPerfil } from './ProveedorPerfil'
 
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/inicio" element={<ConPerfil><Inicio /></ConPerfil>} />
           <Route path="/seccion/:clave" element={<ConPerfil><PaginaSeccion /></ConPerfil>} />
           <Route path="/revisar" element={<ConPerfil><PorRevisar /></ConPerfil>} />
+          <Route path="/buscar" element={<ConPerfil><Buscar /></ConPerfil>} />
           <Route path="/ajustes/:apartado?" element={<Ajustes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

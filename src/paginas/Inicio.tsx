@@ -77,6 +77,10 @@ export function Inicio() {
         </button>
       </header>
 
+      <Link to="/buscar" className="entrada-buscar">
+        <span aria-hidden="true">🔎</span> Buscar en todo lo apuntado
+      </Link>
+
       {!perfil.foto && <p className="aviso aviso-cita">📷 Toca la cámara de arriba para poner tu foto.</p>}
 
       <AvisoProximasCitas perfilId={perfil.id} />

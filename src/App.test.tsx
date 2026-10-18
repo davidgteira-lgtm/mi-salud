@@ -253,6 +253,23 @@ describe('la app', () => {
     vi.unstubAllGlobals()
   })
 
+  it('busca en todo, con faltas y sinónimos, y lleva a la sección', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    const perfil = (await db.perfiles.toArray())[0]
+    const ahora = Date.now()
+    await db.medicamentos.add({ id: 'm1', perfilId: perfil.id, nombre: 'Sintrom 4 mg', momentos: ['cena'], activo: 1, creadoEn: ahora, actualizadoEn: ahora })
+
+    await usuario.click(await screen.findByRole('link', { name: /Buscar en todo/ }))
+    await usuario.type(await screen.findByLabelText('Qué buscas'), 'pastillas sintron')
+    expect(await screen.findByRole('status')).toHaveTextContent('He encontrado 1 cosa')
+    await usuario.click(screen.getByRole('link', { name: /Sintrom 4 mg/ }))
+    expect(await screen.findByText('Lo que tomas ahora y lo que tomaste antes')).toBeInTheDocument()
+  })
+
   it('pega el texto de un informe y guarda los resultados', async () => {
     const usuario = userEvent.setup()
     render(<App />)

@@ -563,3 +563,27 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
   text-decoration: none;
 }
 .banner-ia small { display: block; font-size: 0.85rem; font-weight: 500; color: var(--texto); }
+
+/* ---------- Buscar ---------- */
+.buscador { display: flex; gap: 10px; align-items: stretch; }
+.buscador input { font-size: 1.2rem; }
+.boton-dictar { width: 64px; flex: none; padding: 0; font-size: 1.5rem; }
+.resultado { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; }
+.resultado strong { font-size: 1.1rem; }
+.resultado-fragmento { font-style: italic; color: var(--texto-suave); }
+.entrada-buscar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 2px solid var(--borde);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: 1.15rem;
+  text-decoration: none;
+  box-shadow: var(--sombra);
+}
+/* Texto que solo leen los lectores de pantalla. */
+.solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
