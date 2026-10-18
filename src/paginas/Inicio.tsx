@@ -80,6 +80,9 @@ export function Inicio() {
       <Link to="/buscar" className="entrada-buscar">
         <span aria-hidden="true">🔎</span> Buscar en todo lo apuntado
       </Link>
+      <Link to="/resumen" className="entrada-buscar">
+        <span aria-hidden="true">📄</span> Resumen para el médico
+      </Link>
 
       {!perfil.foto && <p className="aviso aviso-cita">📷 Toca la cámara de arriba para poner tu foto.</p>}
 

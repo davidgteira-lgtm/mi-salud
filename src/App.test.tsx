@@ -270,6 +270,29 @@ describe('la app', () => {
     expect(await screen.findByText('Lo que tomas ahora y lo que tomaste antes')).toBeInTheDocument()
   })
 
+  it('mis datos sanitarios salen en la ficha de emergencia', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Carmen')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Mis datos sanitarios/ }))
+    await usuario.click(await screen.findByRole('button', { name: 'A+' }))
+    await usuario.type(screen.getByLabelText(/Importante en urgencias/), 'Llevo marcapasos')
+    await usuario.click(screen.getByRole('button', { name: /Añadir a alguien/ }))
+    const contacto = screen.getByRole('group', { name: 'Contacto 1' })
+    await usuario.type(within(contacto).getByLabelText('Nombre'), 'Lucía')
+    await usuario.type(within(contacto).getByLabelText('Teléfono'), '600000000')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Ver mi ficha de emergencia/ }))
+    const ficha = await screen.findByRole('article', { name: 'Ficha de emergencia' })
+    expect(within(ficha).getByLabelText('Grupo sanguíneo: A+')).toBeInTheDocument()
+    expect(ficha).toHaveTextContent('Llevo marcapasos')
+    expect(within(ficha).getByRole('link', { name: 'Llamar a Lucía' })).toHaveAttribute('href', 'tel:600000000')
+  })
+
   it('pega el texto de un informe y guarda los resultados', async () => {
     const usuario = userEvent.setup()
     render(<App />)

@@ -496,38 +496,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
   .medida-linea { gap: 4px; }
 }
 
-/* ---- Lectura en voz alta: botones redondos, siempre a mano abajo a la derecha ---- */
-.lector-voz {
-  position: fixed;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  z-index: 30;
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-}
-.lector-boton {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 76px;
-  height: 76px;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  background: var(--principal);
-  color: #fff;
-  font: inherit;
-  font-size: 1.6rem;
-  line-height: 1;
-  box-shadow: 0 4px 14px rgb(16 36 64 / 0.35);
-  cursor: pointer;
-}
-.lector-boton small { margin-top: 4px; font-size: 0.6rem; font-weight: 700; text-align: center; line-height: 1.05; }
-.lector-activo { background: #1e7a46; }
-.lector-quitar { width: 58px; height: 58px; font-size: 1.1rem; background: var(--superficie); color: var(--principal-oscuro); border-color: var(--principal); }
-/* Que el botón no tape lo último de cada pantalla. */
-.pagina { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
 
 /* ---------- Salud dental ---------- */
 .odontograma { display: grid; gap: 4px; background: var(--superficie); border-radius: var(--radio); box-shadow: var(--sombra); padding: 12px 8px; }
@@ -587,3 +555,78 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 }
 /* Texto que solo leen los lectores de pantalla. */
 .solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Lectura en voz alta: una franja arriba del todo en cada pantalla, sin tapar nada ---- */
+.lector-voz {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: max(10px, env(safe-area-inset-top)) 16px 0;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lector-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid var(--principal);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--principal-oscuro);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.lector-boton span { font-size: 1.25rem; line-height: 1; }
+.lector-activo { background: #1e7a46; border-color: #1e7a46; color: #fff; }
+/* La barra ya deja el margen de arriba (también el de la «muesca» del móvil). */
+.lector-voz + .pagina, .lector-voz + main { padding-top: 12px; }
+
+/* ---------- Mis datos y ficha de emergencia ---------- */
+.dato { display: flex; flex-direction: column; gap: 2px; }
+.dato strong { font-size: 1.15rem; }
+.contacto-familia { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.contacto-familia .boton { flex: none; width: auto; padding: 0 18px; }
+.opciones-grupo { grid-template-columns: repeat(4, 1fr); }
+.casilla { display: flex; align-items: center; gap: 12px; min-height: 48px; font-size: 1.1rem; }
+.casilla input { width: 28px; height: 28px; flex: none; }
+
+.emergencia { border: 3px solid var(--peligro); border-radius: var(--radio); background: var(--superficie); overflow: hidden; }
+.emergencia-cabecera { background: var(--peligro); color: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.emergencia-cabecera h2 { margin: 0; font-size: 1.6rem; color: #fff; }
+.emergencia-cabecera small { display: block; font-size: 1rem; }
+.emergencia-grupo { flex: none; min-width: 76px; text-align: center; background: #fff; color: var(--peligro); border-radius: 12px; padding: 6px 10px; font-weight: 900; font-size: 1.6rem; line-height: 1.1; }
+.emergencia-grupo small { display: block; font-size: 0.7rem; font-weight: 700; }
+.emergencia-bloque { padding: 14px 16px; border-top: 1px solid var(--borde); }
+.emergencia-bloque h3 { margin: 0 0 6px; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; color: var(--texto-suave); }
+.emergencia-bloque ul { margin: 0; padding-left: 1.2em; font-size: 1.15rem; }
+.emergencia-bloque li { margin: 2px 0; }
+.emergencia-alergias { background: var(--peligro-claro); }
+.emergencia-alergias h3 { color: var(--peligro); }
+.emergencia-vacio { color: var(--texto-suave); font-style: italic; }
+
+/* Al imprimir (o guardar en PDF) solo sale lo que se imprime. */
+@media print {
+  body { background: #fff; }
+  .lector-voz, .boton-volver, .no-imprimir, .cabecera-seccion { display: none !important; }
+  .pagina { padding: 0; max-width: none; }
+  .tarjeta, .emergencia { box-shadow: none; break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+}
+
+/* ---------- Resumen para el médico ---------- */
+.resumen { background: var(--superficie); border-radius: var(--radio); box-shadow: var(--sombra); padding: 16px; }
+.resumen-cabecera h1 { margin: 0 0 4px; font-size: 1.5rem; }
+.resumen-cabecera p { margin: 2px 0; }
+.resumen-bloque { border-top: 1px solid var(--borde); padding-top: 10px; margin-top: 12px; break-inside: avoid; }
+.resumen-bloque h2 { margin: 0 0 6px; font-size: 1.1rem; }
+.resumen-bloque ul { margin: 0; padding-left: 1.2em; }
+.resumen-bloque li { margin: 3px 0; }
+@media print {
+  .resumen { box-shadow: none; padding: 0; font-size: 11pt; }
+  .resumen-cabecera h1 { font-size: 16pt; }
+}

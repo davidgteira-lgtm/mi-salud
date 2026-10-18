@@ -247,3 +247,30 @@ export interface RevisionPropia {
   nombre: string
   cadaMeses: number
 }
+
+export const GRUPOS_SANGUINEOS = ['0+', '0-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as const
+export type GrupoSanguineo = (typeof GRUPOS_SANGUINEOS)[number]
+
+/** Alguien a quien avisar en una emergencia (familia, vecinos…). */
+export interface ContactoEmergencia {
+  nombre: string
+  /** «Hija», «Vecino»… */
+  relacion?: string
+  telefono: string
+}
+
+/** Mis datos sanitarios: una ficha por persona. También es lo que sale en la ficha de emergencia. */
+export interface DatosSanitarios extends RegistroBase {
+  grupoSanguineo?: GrupoSanguineo
+  /** Número de la tarjeta sanitaria (CIP o TIS). */
+  tarjetaSanitaria?: string
+  seguroCompania?: string
+  seguroPoliza?: string
+  seguroTelefono?: string
+  centroSalud?: string
+  medicoCabecera?: string
+  donante?: boolean
+  /** Cosas que deben saber en urgencias: «Llevo marcapasos», «Uso audífono»… */
+  avisos?: string
+  contactos: ContactoEmergencia[]
+}

@@ -9,6 +9,7 @@ import type {
   Cita,
   Ciclo,
   Contacto,
+  DatosSanitarios,
   EntradaHistorial,
   Medicamento,
   Medida,
@@ -33,7 +34,7 @@ export class BaseDeDatos extends Dexie {
   alergias!: Table<Alergia, string>
   adjuntos!: Table<Adjunto, string>
   /** Ficha de emergencia y datos sanitarios: una por persona. */
-  fichas!: Table<RegistroLibre, string>
+  fichas!: Table<DatosSanitarios, string>
   telefonos!: Table<Contacto, string>
   ciclos!: Table<Ciclo, string>
 

@@ -148,7 +148,7 @@ export function LectorVoz() {
       <div className="lector-voz">
         <button type="button" className="lector-boton" onClick={activar} aria-label="Leer en voz alta">
           <span aria-hidden="true">🔊</span>
-          <small>Leer</small>
+          Leer en voz alta
         </button>
       </div>
     )
@@ -156,21 +156,21 @@ export function LectorVoz() {
 
   return (
     <div className="lector-voz" role="group" aria-label="Lectura en voz alta">
-      <button type="button" className="lector-boton lector-quitar" onClick={desactivar} aria-label="Quitar la lectura en voz alta">
-        <span aria-hidden="true">✕</span>
-        <small>Quitar voz</small>
-      </button>
       {hablando ? (
         <button type="button" className="lector-boton lector-activo" onClick={callar} aria-label="Parar de leer">
           <span aria-hidden="true">⏹</span>
-          <small>Parar</small>
+          Parar
         </button>
       ) : (
         <button type="button" className="lector-boton lector-activo" onClick={leerPantalla} aria-label="Leer la pantalla otra vez">
           <span aria-hidden="true">🔁</span>
-          <small>Leer otra vez</small>
+          Leer otra vez
         </button>
       )}
+      <button type="button" className="lector-boton" onClick={desactivar} aria-label="Quitar la lectura en voz alta">
+        <span aria-hidden="true">✕</span>
+        Quitar
+      </button>
     </div>
   )
 }
