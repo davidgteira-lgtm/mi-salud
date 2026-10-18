@@ -9,7 +9,7 @@ import { listarContactos } from '../db/telefonos'
 import { EtiquetaRegla } from '../componentes/EtiquetaRegla'
 import { useCiclosVisibles } from '../componentes/useCiclosVisibles'
 import type { Ciclo, Cita } from '../db/tipos'
-import { crearIcs, enlaceGoogleCalendar, nombreArchivoIcs } from '../utils/calendario'
+import { anadirAlCalendario, eventoDeCita, nombreArchivoIcs } from '../utils/calendario'
 import { cuandoFalta, fechaConDia, hoyISO } from '../utils/fechas'
 import { normalizar } from '../utils/texto'
 
@@ -122,7 +122,7 @@ function TarjetaCita({
       )}
       <VerAdjuntos registroId={c.id} />
       {proxima && (
-        <button className="boton boton-secundario" onClick={() => anadirAlCalendario(c)}>
+        <button className="boton boton-secundario" onClick={() => anadirAlCalendario(eventoDeCita(c), nombreArchivoIcs(c))}>
           📅 Añadir al calendario del móvil
         </button>
       )}
@@ -289,22 +289,3 @@ function capitalizar(t: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
-/**
- * En Android, el calendario de Google (con internet). En iPhone y el resto, el archivo
- * de calendario, que el móvil abre con su app de Calendario.
- */
-function anadirAlCalendario(c: Cita) {
-  const android = /android/i.test(navigator.userAgent)
-  if (android && navigator.onLine) {
-    window.open(enlaceGoogleCalendar(c), '_blank', 'noopener')
-    return
-  }
-  const archivo = new Blob([crearIcs(c)], { type: 'text/calendar;charset=utf-8' })
-  const url = URL.createObjectURL(archivo)
-  const enlace = document.createElement('a')
-  enlace.href = url
-  // En iPhone, sin "download" se abre directamente el Calendario para añadirla.
-  if (!/iphone|ipad/i.test(navigator.userAgent)) enlace.download = nombreArchivoIcs(c)
-  enlace.click()
-  setTimeout(() => URL.revokeObjectURL(url), 30_000)
-}

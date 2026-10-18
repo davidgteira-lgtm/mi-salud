@@ -15,6 +15,10 @@ export interface Perfil {
   sexo?: Sexo
   /** Si quiere llevar el control de la regla (si no se ha dicho, sí para las mujeres). */
   apuntarRegla?: boolean
+  /** Revisiones y vacunas de la lista que ha quitado porque no le tocan. */
+  revisionesOcultas?: string[]
+  /** Revisiones que le ha mandado su médico (por ejemplo, el cardiólogo cada año). */
+  revisionesPropias?: RevisionPropia[]
   /** Foto de la cara, guardada dentro del móvil. */
   foto?: Blob
   /** Color con el que se distingue a la persona en la app. */
@@ -216,4 +220,26 @@ export interface TratamientoDental extends RegistroBase {
   dientes: number[]
   dentista?: string
   notas?: string
+}
+
+/** Una vacuna puesta o una revisión hecha. */
+export interface RegistroRevision extends RegistroBase {
+  tipo: 'revision' | 'vacuna'
+  /** Si es una de la lista de la app (datos/revisiones.ts) o una propia de la persona. */
+  clave?: string
+  nombre: string
+  fecha: FechaISO
+  /** "1ª dosis", "2ª dosis"… */
+  dosis?: string
+  /** Número de lote de la vacuna (viene en la pegatina de la cartilla). */
+  lote?: string
+  lugar?: string
+  notas?: string
+}
+
+/** Una revisión que el médico le ha mandado a esta persona en concreto. */
+export interface RevisionPropia {
+  clave: string
+  nombre: string
+  cadaMeses: number
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from './db/db'
@@ -180,6 +180,32 @@ describe('la app', () => {
 
     expect(await screen.findByRole('button', { name: /\(36\): empaste/ })).toBeInTheDocument()
     expect((await db.dental.toArray())[0]).toMatchObject({ tipo: 'empaste', dientes: [36] })
+  })
+
+  it('revisiones: dice lo que toca por la edad y se apunta con un toque', async () => {
+    const usuario = userEvent.setup()
+    render(<App />)
+    await usuario.click(await screen.findByRole('button', { name: 'Empezar' }))
+    await usuario.type(await screen.findByLabelText('Nombre'), 'Pilar')
+    await usuario.click(screen.getByRole('button', { name: 'Mujer' }))
+    // 66 años
+    fireEvent.change(screen.getByLabelText(/Fecha de nacimiento/), { target: { value: `${new Date().getFullYear() - 66}-01-01` } })
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await usuario.click(await screen.findByRole('link', { name: /Revisiones y vacunas/ }))
+    const teToca = await screen.findByRole('region', { name: 'Te toca' })
+    expect(teToca).toHaveTextContent('Mamografía')
+    expect(teToca).toHaveTextContent('Vacuna del neumococo')
+    expect(screen.getByRole('region', { name: 'Más adelante' })).toHaveTextContent('A los 70: vacuna del COVID')
+
+    // Apuntar el neumococo desde su tarjeta: el nombre ya viene puesto.
+    const tarjeta = screen.getByText(/Vacuna del neumococo/).closest('article')!
+    await usuario.click(within(tarjeta).getByRole('button', { name: /Ya me la he puesto/ }))
+    expect(screen.getByLabelText('¿Qué vacuna?')).toHaveValue('Vacuna del neumococo (neumonía)')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByRole('region', { name: 'Al día' })).toHaveTextContent('Vacuna del neumococo')
+    expect((await db.revisiones.toArray())[0]).toMatchObject({ tipo: 'vacuna', clave: 'neumococo' })
   })
 
   it('pega el texto de un informe y guarda los resultados', async () => {

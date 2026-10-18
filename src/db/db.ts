@@ -14,6 +14,7 @@ import type {
   Medida,
   Perfil,
   RegistroBase,
+  RegistroRevision,
   TratamientoDental,
 } from './tipos'
 
@@ -26,7 +27,7 @@ export class BaseDeDatos extends Dexie {
   citas!: Table<Cita, string>
   historial!: Table<EntradaHistorial, string>
   analiticas!: Table<Analitica, string>
-  revisiones!: Table<RegistroLibre, string>
+  revisiones!: Table<RegistroRevision, string>
   dental!: Table<TratamientoDental, string>
   constantes!: Table<Medida, string>
   alergias!: Table<Alergia, string>

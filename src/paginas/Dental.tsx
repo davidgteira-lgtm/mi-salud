@@ -17,7 +17,7 @@ import {
 } from '../db/dental'
 import { agruparPorAno } from '../db/historial'
 import type { TipoDental, TratamientoDental } from '../db/tipos'
-import { fechaLarga, hoyISO } from '../utils/fechas'
+import { fechaLarga, hoyISO, mesYAno } from '../utils/fechas'
 import { normalizar } from '../utils/texto'
 
 /** Salud dental: el dibujo de la boca, lo que tiene cada diente y todo lo que te han hecho. */
@@ -279,9 +279,4 @@ function FormularioDental(props: {
       )}
     </form>
   )
-}
-
-/** "marzo de 2025". */
-function mesYAno(fecha: string): string {
-  return fechaLarga(fecha).replace(/^\d+ de /, '')
 }

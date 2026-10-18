@@ -10,6 +10,7 @@ import { Constantes } from './Constantes'
 import { Dental } from './Dental'
 import { Historial } from './Historial'
 import { Medicacion } from './Medicacion'
+import { Revisiones } from './Revisiones'
 import { Telefonos } from './Telefonos'
 
 /** El contenido de cada sección que ya está hecha. Las demás se ven "en construcción". */
@@ -21,6 +22,7 @@ const CONTENIDO: Record<string, ComponentType<{ perfilId: string }>> = {
   dental: Dental,
   historial: Historial,
   medicacion: Medicacion,
+  revisiones: Revisiones,
   telefonos: Telefonos,
 }
 

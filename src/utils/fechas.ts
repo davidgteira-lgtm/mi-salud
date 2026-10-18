@@ -66,3 +66,21 @@ export function hoyISO(hoy: Date = new Date()): FechaISO {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${hoy.getFullYear()}-${p(hoy.getMonth() + 1)}-${p(hoy.getDate())}`
 }
+
+/** Suma meses sin pasarse de mes: "2026-01-31" + 1 → "2026-02-28". */
+export function sumarMeses(fecha: FechaISO, meses: number): FechaISO {
+  const [a, m, d] = fecha.split('-').map(Number)
+  const total = a * 12 + (m - 1) + meses
+  const ano = Math.floor(total / 12)
+  const mes = (total % 12) + 1
+  const ultimoDia = new Date(Date.UTC(ano, mes, 0)).getUTCDate()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${ano}-${p(mes)}-${p(Math.min(d, ultimoDia))}`
+}
+
+/** "2025-03-08" → "marzo de 2025" */
+export function mesYAno(fecha: FechaISO): string {
+  if (!esFechaValida(fecha)) return fecha
+  const [a, m] = fecha.split('-').map(Number)
+  return `${MESES[m - 1]} de ${a}`
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Cita } from '../db/tipos'
-import { crearIcs, enlaceGoogleCalendar, nombreArchivoIcs } from './calendario'
+import { crearIcs, crearIcsEvento, enlaceGoogleCalendar, enlaceGoogleEvento, nombreArchivoIcs } from './calendario'
 
 const base: Cita = {
   id: 'abc',
@@ -55,5 +55,24 @@ describe('Google Calendar', () => {
 describe('nombre del archivo', () => {
   it('sin tildes ni espacios', () => {
     expect(nombreArchivoIcs({ ...base, especialidad: 'Oftalmología (ojos)' })).toBe('cita-oftalmologia-ojos-2026-10-20.ics')
+  })
+})
+
+describe('recordatorios de revisiones (todo el día)', () => {
+  const evento = { id: 'revision-mama', fecha: '2027-03-01', titulo: 'Me toca: Mamografía', descripcion: 'Pide cita en tu centro de salud.' }
+
+  it('avisa el día antes y ese día a las 9', () => {
+    const ics = crearIcsEvento(evento, new Date('2026-10-18T10:00:00Z'))
+    expect(ics).toContain('DTSTART;VALUE=DATE:20270301')
+    expect(ics).toContain('DTEND;VALUE=DATE:20270302')
+    expect(ics).toContain('TRIGGER:-P1D')
+    expect(ics).toContain('TRIGGER:PT9H')
+    expect(ics).toContain('SUMMARY:Me toca: Mamografía')
+  })
+
+  it('el enlace de Google lleva el día entero', () => {
+    const url = new URL(enlaceGoogleEvento(evento))
+    expect(url.searchParams.get('dates')).toBe('20270301/20270302')
+    expect(url.searchParams.get('text')).toBe('Me toca: Mamografía')
   })
 })

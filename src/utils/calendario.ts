@@ -1,8 +1,18 @@
-// "Añadir al calendario del móvil": así es el propio teléfono el que avisa de la cita,
-// aunque Mi Salud esté cerrada.
+// "Añadir al calendario del móvil": así es el propio teléfono el que avisa de la cita
+// o de la revisión, aunque Mi Salud esté cerrada.
 import type { Cita } from '../db/tipos'
 
 const DURACION_MINUTOS = 30
+
+/** Cualquier cosa que se puede poner en el calendario: una cita, una revisión, una vacuna… */
+export interface EventoCalendario {
+  id: string
+  fecha: string
+  hora?: string
+  titulo: string
+  lugar?: string
+  descripcion?: string
+}
 
 function sinGuiones(fecha: string): string {
   return fecha.replaceAll('-', '')
@@ -29,8 +39,15 @@ export function tituloCita(c: Cita): string {
   return `Cita: ${c.especialidad}${c.medico ? ` (${c.medico})` : ''}`
 }
 
-function descripcionCita(c: Cita): string {
-  return [c.motivo && `Motivo: ${c.motivo}`, 'Apuntada en Mi Salud'].filter(Boolean).join('\n')
+export function eventoDeCita(c: Cita): EventoCalendario {
+  return {
+    id: c.id,
+    fecha: c.fecha,
+    hora: c.hora,
+    titulo: tituloCita(c),
+    lugar: c.lugar,
+    descripcion: [c.motivo && `Motivo: ${c.motivo}`, 'Apuntada en Mi Salud'].filter(Boolean).join('\n'),
+  }
 }
 
 /** Escapa el texto como piden los archivos de calendario. */
@@ -50,21 +67,24 @@ function plegar(linea: string): string {
   return partes.join('\r\n')
 }
 
-/** Archivo de calendario (.ics) con avisos el día antes y 2 horas antes. */
-export function crearIcs(c: Cita, ahora: Date = new Date()): string {
+/**
+ * Archivo de calendario (.ics). Con hora: avisa el día antes y 2 horas antes.
+ * Sin hora (todo el día): avisa el día antes y ese mismo día a las 9 de la mañana.
+ */
+export function crearIcsEvento(e: EventoCalendario, ahora: Date = new Date()): string {
   const sello = ahora.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-  const cuando = c.hora
+  const cuando = e.hora
     ? (() => {
-        const [ini, fin] = inicioYFin(c.fecha, c.hora)
+        const [ini, fin] = inicioYFin(e.fecha, e.hora)
         return [`DTSTART:${ini}`, `DTEND:${fin}`]
       })()
-    : [`DTSTART;VALUE=DATE:${sinGuiones(c.fecha)}`, `DTEND;VALUE=DATE:${diaSiguiente(c.fecha)}`]
+    : [`DTSTART;VALUE=DATE:${sinGuiones(e.fecha)}`, `DTEND;VALUE=DATE:${diaSiguiente(e.fecha)}`]
 
   const aviso = (cuandoAvisar: string) => [
     'BEGIN:VALARM',
     `TRIGGER:${cuandoAvisar}`,
     'ACTION:DISPLAY',
-    `DESCRIPTION:${escapar(tituloCita(c))}`,
+    `DESCRIPTION:${escapar(e.titulo)}`,
     'END:VALARM',
   ]
 
@@ -74,41 +94,71 @@ export function crearIcs(c: Cita, ahora: Date = new Date()): string {
     'PRODID:-//Mi Salud//ES',
     'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
-    `UID:${c.id}@mi-salud`,
+    `UID:${e.id}@mi-salud`,
     `DTSTAMP:${sello}`,
     ...cuando,
-    `SUMMARY:${escapar(tituloCita(c))}`,
-    ...(c.lugar ? [`LOCATION:${escapar(c.lugar)}`] : []),
-    `DESCRIPTION:${escapar(descripcionCita(c))}`,
+    `SUMMARY:${escapar(e.titulo)}`,
+    ...(e.lugar ? [`LOCATION:${escapar(e.lugar)}`] : []),
+    ...(e.descripcion ? [`DESCRIPTION:${escapar(e.descripcion)}`] : []),
     ...aviso('-P1D'),
-    ...(c.hora ? aviso('-PT2H') : []),
+    ...aviso(e.hora ? '-PT2H' : 'PT9H'),
     'END:VEVENT',
     'END:VCALENDAR',
   ]
   return lineas.map(plegar).join('\r\n') + '\r\n'
 }
 
-/** Enlace para añadirla en Google Calendar (necesita internet al pulsarlo). */
-export function enlaceGoogleCalendar(c: Cita): string {
-  const fechas = c.hora ? inicioYFin(c.fecha, c.hora).join('/') : `${sinGuiones(c.fecha)}/${diaSiguiente(c.fecha)}`
+export function crearIcs(c: Cita, ahora: Date = new Date()): string {
+  return crearIcsEvento(eventoDeCita(c), ahora)
+}
+
+/** Enlace para añadirlo en Google Calendar (necesita internet al pulsarlo). */
+export function enlaceGoogleEvento(e: EventoCalendario): string {
+  const fechas = e.hora ? inicioYFin(e.fecha, e.hora).join('/') : `${sinGuiones(e.fecha)}/${diaSiguiente(e.fecha)}`
   const p = new URLSearchParams({
     action: 'TEMPLATE',
-    text: tituloCita(c),
+    text: e.titulo,
     dates: fechas,
     ctz: 'Europe/Madrid',
-    details: descripcionCita(c),
   })
-  if (c.lugar) p.set('location', c.lugar)
+  if (e.descripcion) p.set('details', e.descripcion)
+  if (e.lugar) p.set('location', e.lugar)
   return `https://calendar.google.com/calendar/render?${p.toString()}`
+}
+
+export function enlaceGoogleCalendar(c: Cita): string {
+  return enlaceGoogleEvento(eventoDeCita(c))
 }
 
 /** "cita-cardiologia-2026-10-20.ics" */
 export function nombreArchivoIcs(c: Cita): string {
-  const esp = c.especialidad
+  return `cita-${enMinusculasSinAcentos(c.especialidad)}-${c.fecha}.ics`
+}
+
+function enMinusculasSinAcentos(t: string): string {
+  return t
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-  return `cita-${esp}-${c.fecha}.ics`
+}
+
+/**
+ * Lo pone en el calendario del móvil. En Android con internet abre Google Calendar;
+ * si no, descarga un archivo de calendario (en iPhone se abre directamente el Calendario).
+ */
+export function anadirAlCalendario(e: EventoCalendario, nombreArchivo = `${enMinusculasSinAcentos(e.titulo)}-${e.fecha}.ics`): void {
+  const android = /android/i.test(navigator.userAgent)
+  if (android && navigator.onLine) {
+    window.open(enlaceGoogleEvento(e), '_blank', 'noopener')
+    return
+  }
+  const archivo = new Blob([crearIcsEvento(e)], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(archivo)
+  const enlace = document.createElement('a')
+  enlace.href = url
+  if (!/iphone|ipad/i.test(navigator.userAgent)) enlace.download = nombreArchivo
+  enlace.click()
+  setTimeout(() => URL.revokeObjectURL(url), 30_000)
 }
