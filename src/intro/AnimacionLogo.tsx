@@ -39,27 +39,30 @@ export function AnimacionLogo() {
   // Un leve balanceo final, para que no se quede «muerto».
   const balanceo = Math.sin((f - 80) / 22) * interpolate(f, [80, 120, 200], [0, 3, 1.5], limitar)
 
-  // 2. Corazón y cruz, uno detrás de otro (2,7 s → 4 s).
-  const corazon = spring({ frame: f - 82, fps, config: { damping: 11, stiffness: 120 } })
-  const cruzV = spring({ frame: f - 100, fps, config: { damping: 14, stiffness: 160 } })
-  const cruzH = spring({ frame: f - 107, fps, config: { damping: 14, stiffness: 160 } })
+  // 2. Corazón y cruz, uno detrás de otro, mientras el icono aún gira (1,3 s → 2,3 s): el icono no se queda vacío.
+  const corazon = spring({ frame: f - 38, fps, config: { damping: 11, stiffness: 120 } })
+  const cruzV = spring({ frame: f - 56, fps, config: { damping: 14, stiffness: 160 } })
+  const cruzH = spring({ frame: f - 63, fps, config: { damping: 14, stiffness: 160 } })
 
-  // 3. Brillo que recorre el icono (4 s) y otro al final (6 s).
-  const brillo1 = interpolate(f, [118, 146], [-140, 140], { ...limitar, easing: Easing.inOut(Easing.cubic) })
-  const brillo2 = interpolate(f, [178, 200], [-140, 140], { ...limitar, easing: Easing.inOut(Easing.cubic) })
+  // 3. Brillo que recorre el icono (2,6 s) y otro al final (5,8 s).
+  const brillo1 = interpolate(f, [78, 104], [-140, 140], { ...limitar, easing: Easing.inOut(Easing.cubic) })
+  const brillo2 = interpolate(f, [174, 196], [-140, 140], { ...limitar, easing: Easing.inOut(Easing.cubic) })
 
-  // 4. «Mi Salud», letra a letra (4,2 s → 5,3 s).
+  // 4. «Mi Salud», letra a letra (2,9 s → 3,9 s).
   const letras = [...'Mi Salud']
 
-  // 5. La luz llena la pantalla y queda el fondo de la app (5 s → 5,8 s).
-  const luz = interpolate(f, [150, 174], [0, 1], { ...limitar, easing: Easing.inOut(Easing.quad) })
+  // 5. La luz llena la pantalla y queda el fondo de la app (3,7 s → 4,5 s).
+  const luz = interpolate(f, [112, 136], [0, 1], { ...limitar, easing: Easing.inOut(Easing.quad) })
   const colorLetra = interpolateColors(luz, [0, 1], ['#ffffff', AZUL_OSCURO])
-  const acercar = interpolate(f, [150, 210], [1, 1.05], { ...limitar, easing: Easing.out(Easing.quad) })
+  const acercar = interpolate(f, [112, 240], [1, 1.05], { ...limitar, easing: Easing.out(Easing.quad) })
+
+  // 6. El lema, ya sobre el fondo claro: entra despacio (4,2 s → 5,6 s) y se queda hasta el final (8 s).
+  const lema = interpolate(f, [126, 168], [0, 1], { ...limitar, easing: Easing.inOut(Easing.cubic) })
 
   // Luz ambiente de la escena oscura.
   const haz = interpolate(f, [0, 60, 150], [-420, 40, 160], limitar)
-  const hazOpacidad = interpolate(f, [0, 30, 150, 174], [0, 0.55, 0.55, 0], limitar)
-  const halo = interpolate(f, [40, 110, 160], [0, 1, 0.8], limitar) * (1 + 0.08 * Math.sin(f / 9))
+  const hazOpacidad = interpolate(f, [0, 30, 112, 136], [0, 0.55, 0.55, 0], limitar)
+  const halo = interpolate(f, [40, 90, 130], [0, 1, 0.8], limitar) * (1 + 0.08 * Math.sin(f / 9))
 
   return (
     <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 42%, #10233d 0%, ${NOCHE} 70%)`, overflow: 'hidden' }}>
@@ -104,7 +107,7 @@ export function AnimacionLogo() {
 
       {/* Logo */}
       <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', perspective: 1700, transform: `scale(${acercar})` }}>
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -140 }}>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -40 }}>
           {/* Halo de luz detrás del icono */}
           <div
             style={{
@@ -214,7 +217,7 @@ export function AnimacionLogo() {
             }}
           >
             {letras.map((l, i) => {
-              const t = spring({ frame: f - 128 - i * 3, fps, config: { damping: 18, stiffness: 110 } })
+              const t = spring({ frame: f - 88 - i * 3, fps, config: { damping: 18, stiffness: 110 } })
               return (
                 <span
                   key={i}
@@ -229,6 +232,37 @@ export function AnimacionLogo() {
                 </span>
               )
             })}
+          </div>
+
+          {/* Línea fina y el lema final */}
+          <div
+            style={{
+              marginTop: 44,
+              height: 6,
+              borderRadius: 3,
+              width: interpolate(f, [118, 140], [0, 180], { ...limitar, easing: Easing.out(Easing.cubic) }),
+              background: AZUL,
+              opacity: 0.85,
+            }}
+          />
+          <div
+            style={{
+              marginTop: 36,
+              maxWidth: 780,
+              textAlign: 'center',
+              fontFamily: LETRA,
+              fontWeight: 600,
+              fontSize: Math.round(TAM_LETRA * 0.48),
+              lineHeight: 1.25,
+              color: '#45525f',
+              opacity: lema,
+              transform: `translateY(${interpolate(lema, [0, 1], [18, 0])}px)`,
+              filter: `blur(${interpolate(lema, [0, 1], [4, 0])}px)`,
+            }}
+          >
+            Todo mi historial
+            <br />
+            en un único lugar
           </div>
         </div>
       </AbsoluteFill>

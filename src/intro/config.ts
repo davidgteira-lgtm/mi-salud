@@ -1,6 +1,6 @@
-// Medidas de la intro: 7 segundos a 30 imágenes por segundo, con la forma exacta de la pantalla
+// Medidas de la intro: 8 segundos a 30 imágenes por segundo, con la forma exacta de la pantalla
 // (el lado corto mide siempre 1080, así el logo se ve igual de grande en el móvil y en el ordenador).
-export const INTRO = { fps: 30, segundos: 7 }
+export const INTRO = { fps: 30, segundos: 8 }
 export const LADO_CORTO = 1080
 
 export function medidasIntro(ancho = window.innerWidth, alto = window.innerHeight): { ancho: number; alto: number } {
