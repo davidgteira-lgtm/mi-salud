@@ -388,7 +388,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
   font-size: 0.95rem;
   pointer-events: none;
   white-space: nowrap;
+  /* Nunca más ancho que la gráfica: si no cabe, el texto pasa a otra línea. */
+  max-width: 100%;
 }
+.grafica-globo > div { white-space: normal; overflow-wrap: anywhere; }
 
 /* ---- Valoración de un valor (siempre con símbolo y palabra, nunca solo color) ---- */
 .nivel { white-space: nowrap; flex: none; }
@@ -679,7 +682,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .toma-hecha .toma-boton { background: #1e7a46; border-color: #1e7a46; color: #fff; }
 .hoy-titulo { margin: 4px 0 0; font-size: 1.05rem; color: var(--principal-oscuro); }
 /* Atajo de arriba de cada sección: los tres botones en una fila. */
-.atajo-documento .botones-adjuntos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* Tres botones en fila; si con letra grande no caben, pasan a la línea de abajo en vez de salirse. */
+.atajo-documento .botones-adjuntos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.2em), 1fr)); gap: 8px; }
 .atajo-documento .botones-adjuntos .boton { flex-direction: column; gap: 2px; min-height: 64px; padding: 6px 4px; font-size: 0.9rem; width: 100%; }
 .tipo-registro { font-size: 0.95rem; color: var(--texto-suave); }
 

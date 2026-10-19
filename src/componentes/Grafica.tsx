@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { formatearNumero } from '../utils/numeros'
 
 // Gráfica de líneas sencilla, hecha a mano para que funcione sin internet.
@@ -78,6 +78,19 @@ export function Grafica(props: {
     return { momentos, etiquetas, marcas, x, y, min, max, zona }
   }, [props.series, props.banda])
 
+  // El globo del punto tocado se coloca centrado sobre el punto, pero sin salirse nunca de la gráfica
+  // (con letra grande o en móviles estrechos se cortaba la fecha).
+  const lienzo = useRef<HTMLDivElement>(null)
+  const globo = useRef<HTMLDivElement>(null)
+  const [izquierdaGlobo, setIzquierdaGlobo] = useState(0)
+  useLayoutEffect(() => {
+    if (activo === null || !lienzo.current || !globo.current || calc.momentos.length === 0) return
+    const ancho = lienzo.current.clientWidth
+    const anchoGlobo = globo.current.offsetWidth
+    const centro = (calc.x(calc.momentos[activo]) / ANCHO) * ancho
+    setIzquierdaGlobo(Math.min(Math.max(0, centro - anchoGlobo / 2), Math.max(0, ancho - anchoGlobo)))
+  }, [activo, calc])
+
   if (calc.momentos.length === 0) return null
   const { momentos, etiquetas, marcas, x, y, zona } = calc
   const dec = props.decimales ?? 1
@@ -116,7 +129,7 @@ export function Grafica(props: {
           ))}
         </div>
       )}
-      <div className="grafica-lienzo">
+      <div className="grafica-lienzo" ref={lienzo}>
         <svg
           viewBox={`0 0 ${ANCHO} ${ALTO}`}
           role="img"
@@ -205,7 +218,8 @@ export function Grafica(props: {
           <div
             className="grafica-globo"
             role="status"
-            style={{ left: `${(xActivo / ANCHO) * 100}%`, transform: `translateX(${xActivo > ANCHO / 2 ? '-100%' : '0'})` }}
+            ref={globo}
+            style={{ left: izquierdaGlobo }}
           >
             <div className="texto-suave">{etiquetas.get(momentoActivo)}</div>
             {props.series.map((s) => {
