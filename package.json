@@ -12,12 +12,14 @@
     "test:una-vez": "vitest run"
   },
   "dependencies": {
+    "@remotion/player": "4.0.536",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "^8.4.0"
+    "react-router": "^8.4.0",
+    "remotion": "4.0.536"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
