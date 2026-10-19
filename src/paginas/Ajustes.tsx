@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { AjustesIa } from '../componentes/AjustesIa'
 import { Confirmar } from '../componentes/Confirmar'
@@ -23,8 +23,6 @@ export function Ajustes() {
   const { apartado } = useParams()
   const { perfil } = usePerfilActivo()
   const ir = useNavigate()
-  // Se llega desde abajo del inicio: se empieza a leer por arriba.
-  useEffect(() => window.scrollTo(0, 0), [apartado])
 
   return (
     <main className="pagina pila">

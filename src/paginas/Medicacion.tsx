@@ -15,7 +15,6 @@ import {
   listarMedicamentos,
   MOMENTOS,
   revisarMedicamento,
-  volverATomar,
 } from '../db/medicamentos'
 import type { Alergia, Medicamento, MotivoFinMedicamento, ValoracionMedicamento } from '../db/tipos'
 import {
@@ -66,7 +65,6 @@ export function Medicacion({ perfilId }: { perfilId: string }) {
       avisos={comprobarAlergias(m.nombre, alergias)}
       onCambiar={() => setEditando(m)}
       onDejar={() => setDejando(m)}
-      onVolver={() => volverATomar(m.id).then(() => setPestana('ahora'))}
     />
   )
 
@@ -136,7 +134,6 @@ function TarjetaMedicamento(props: {
   avisos: AvisoAlergia[]
   onCambiar: () => void
   onDejar: () => void
-  onVolver: () => void
 }) {
   const m = props.medicamento
   const duracion = duracionToma(m)
@@ -201,13 +198,10 @@ function TarjetaMedicamento(props: {
         </p>
       ))}
       <VerAdjuntos registroId={m.id} />
-      {m.activo ? (
+      {/* Los pasados se quedan como historial: si se vuelve a tomar, se apunta como nuevo (y la app avisa de que ya lo tomó). */}
+      {m.activo === 1 && (
         <button className="boton boton-secundario" onClick={props.onDejar}>
           Ya no lo tomo
-        </button>
-      ) : (
-        <button className="boton boton-secundario" onClick={props.onVolver}>
-          Lo vuelvo a tomar
         </button>
       )}
       <button className="enlace" onClick={props.onCambiar}>
@@ -619,7 +613,7 @@ function DialogoDejar({ medicamento, onTerminar }: { medicamento: Medicamento; o
       onNo={onTerminar}
     >
       <div className="pila" style={{ gap: 10, textAlign: 'left' }}>
-        <p style={{ margin: 0 }}>Pasará a «Lo que tomé antes», con la fecha de hoy. Podrás volver a tomarlo cuando quieras.</p>
+        <p style={{ margin: 0 }}>Pasará a «Lo que tomé antes», con la fecha de hoy, y quedará en tu historial.</p>
         <Selector etiqueta="¿Por qué? (si quieres)" opciones={MOTIVOS_FIN} valor={motivo} onCambio={(v) => setMotivo((x) => (x === v ? '' : v))} />
         <Selector
           etiqueta="¿Qué tal te fue? (si quieres)"

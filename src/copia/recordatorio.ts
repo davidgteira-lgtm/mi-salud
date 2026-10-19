@@ -19,3 +19,9 @@ export function apuntarCopiaHecha(ahora = Date.now()) {
     // No pasa nada si no se puede apuntar.
   }
 }
+
+/** Sin copia de seguridad o con una de hace más de un mes: se avisa en «Alertas». */
+export function copiaPendiente(): boolean {
+  const dias = diasDesdeUltimaCopia()
+  return dias === null || dias > 30
+}

@@ -4,6 +4,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router'
 import { AvisoActualizacion } from './componentes/AvisoActualizacion'
 import { LectorVoz } from './componentes/LectorVoz'
 import { Logo } from './componentes/Logo'
+import { ArribaAlCambiar } from './componentes/ArribaAlCambiar'
 import { ElegirPerfil } from './paginas/ElegirPerfil'
 import { FormularioPerfil } from './paginas/FormularioPerfil'
 import { Inicio } from './paginas/Inicio'
@@ -15,6 +16,7 @@ import { ProveedorPerfil } from './ProveedorPerfil'
 const Ajustes = lazy(async () => ({ default: (await import('./paginas/Ajustes')).Ajustes }))
 const Buscar = lazy(async () => ({ default: (await import('./paginas/Buscar')).Buscar }))
 const PorRevisar = lazy(async () => ({ default: (await import('./paginas/PorRevisar')).PorRevisar }))
+const Alertas = lazy(async () => ({ default: (await import('./paginas/Alertas')).Alertas }))
 const Resumen = lazy(async () => ({ default: (await import('./paginas/Resumen')).Resumen }))
 
 /** Si nadie ha elegido persona, vuelve a "¿Quién eres?". */
@@ -29,6 +31,7 @@ export default function App() {
   return (
     <ProveedorPerfil>
       <HashRouter>
+        <ArribaAlCambiar />
         {/* Arriba del todo en todas las pantallas: el logo a la izquierda y leer en voz alta a la derecha. */}
         <header className="barra-superior">
           <Logo />
@@ -59,6 +62,14 @@ export default function App() {
               element={
                 <ConPerfil>
                   <PaginaSeccion />
+                </ConPerfil>
+              }
+            />
+            <Route
+              path="/alertas"
+              element={
+                <ConPerfil>
+                  <Alertas />
                 </ConPerfil>
               }
             />

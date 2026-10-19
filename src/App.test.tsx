@@ -299,7 +299,8 @@ describe('la app', () => {
     await usuario.click(await screen.findByRole('button', { name: /Ver con datos de ejemplo/ }))
     expect(await screen.findByRole('heading', { name: 'Hola, Rosa (ejemplo)' }, { timeout: 5000 })).toBeInTheDocument()
     expect(screen.getByRole('note')).toHaveTextContent('todos sus datos son inventados')
-    // La cita de cardiología de dentro de 3 días sale avisada en el inicio.
+    // La cita de cardiología de dentro de 3 días se cuenta en el banner de alertas y se ve al entrar.
+    await usuario.click(await screen.findByRole('link', { name: /Alertas:.*1 cita/ }, { timeout: 5000 }))
     expect(await screen.findByRole('link', { name: /En 3 días.*Cardiología/ })).toBeInTheDocument()
   })
 
@@ -391,6 +392,7 @@ describe('la app', () => {
     expect(screen.getByRole('button', { name: /Añadir al calendario/ })).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: /Volver al inicio/ }))
+    await usuario.click(await screen.findByRole('link', { name: /Alertas:.*1 cita/ }))
     expect(await screen.findByRole('link', { name: /Mañana a las 10:30: Cardiología/ })).toBeInTheDocument()
   })
 })
