@@ -29,6 +29,7 @@ export type DatosMedicamento = Pick<
   | 'valoracion'
   | 'efectos'
   | 'motivoFin'
+  | 'foto'
 >
 
 export function revisarMedicamento(datos: DatosMedicamento): string | null {
@@ -61,6 +62,7 @@ export async function guardarMedicamento(perfilId: string, datos: DatosMedicamen
     valoracion: datos.valoracion || undefined,
     efectos: texto(datos.efectos),
     motivoFin: datos.activo ? undefined : datos.motivoFin || undefined,
+    foto: datos.foto,
   }
   const ahora = Date.now()
   if (id) {
@@ -70,6 +72,11 @@ export async function guardarMedicamento(perfilId: string, datos: DatosMedicamen
   const nuevo: Medicamento = { ...limpio, id: nuevoId(), perfilId, creadoEn: ahora, actualizadoEn: ahora }
   await db.medicamentos.add(nuevo)
   return nuevo.id
+}
+
+/** Pone, cambia o quita (sin foto) la foto de la pastilla o de la caja. */
+export async function cambiarFotoMedicamento(id: string, foto?: Blob): Promise<void> {
+  await db.medicamentos.update(id, { foto, actualizadoEn: Date.now() })
 }
 
 /** "Ya no lo tomo": pasa al historial con la fecha de hoy (o la indicada). */

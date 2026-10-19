@@ -24,6 +24,7 @@ import { buscarPrueba } from '../utils/analisis'
 import { sumarDias } from '../utils/ciclos'
 import { hoyISO } from '../utils/fechas'
 import { crearPdf, fechaEs, type LineaPdf } from './pdfFalso'
+import { dibujarMedicina, type DibujoPastilla } from './fotosPastillas'
 // Fotos libres de derechos: Pexels 5959404 (Rosa) y Unsplash photo-1758600433363-eaa446a1ac84 (Lucía).
 import fotoLucia from '../assets/perfiles/lucia.jpg'
 import fotoRosa from '../assets/perfiles/rosa.jpg'
@@ -43,7 +44,7 @@ function r(nombre: string, valor: number, unidad: string, refMin?: number, refMa
 }
 
 /** Sube cuando los datos de ejemplo cambian: así se avisa a quien tenga los antiguos. */
-export const VERSION_EJEMPLOS = 5
+export const VERSION_EJEMPLOS = 6
 
 /** Un medicamento que se tomó antes: desde qué día, cuántos días, para qué y qué tal fue. */
 interface TomadoAntes {
@@ -58,6 +59,17 @@ interface TomadoAntes {
   /** Solo si no está en la lista de medicamentos de la app. */
   familia?: string
   notas?: string
+}
+
+/** Pone la ilustración de ejemplo a las medicinas que se toman ahora (por el principio del nombre). */
+async function fotosDeMedicinas(perfilId: string, dibujos: Record<string, DibujoPastilla>): Promise<void> {
+  const actuales = await db.medicamentos.where('[perfilId+activo]').equals([perfilId, 1]).toArray()
+  for (const m of actuales) {
+    const clave = Object.keys(dibujos).find((k) => m.nombre.startsWith(k))
+    if (!clave) continue
+    const foto = await dibujarMedicina(m.nombre, dibujos[clave])
+    if (foto) await db.medicamentos.update(m.id, { foto })
+  }
 }
 
 async function historialMedicacion(perfilId: string, lista: TomadoAntes[]): Promise<void> {
@@ -448,6 +460,14 @@ async function crearRosa(dia: (n: number) => FechaISO, ano: number): Promise<str
     },
   ])
 
+  await fotosDeMedicinas(id, {
+    Sintrom: { franja: '#2e7bc4', color: '#cfe6f7', forma: 'redonda', ranura: true, unidades: '20 comprimidos' },
+    Enalapril: { franja: '#e07a1f', color: '#ffffff', forma: 'redonda', ranura: true, unidades: '28 comprimidos' },
+    Atorvastatina: { franja: '#7a3fa0', color: '#fbfbfb', forma: 'ovalada', unidades: '28 comprimidos' },
+    Metformina: { franja: '#2f9a5c', color: '#ffffff', forma: 'alargada', ranura: true, unidades: '50 comprimidos' },
+    Pantoprazol: { franja: '#d4a017', color: '#f2d06b', forma: 'ovalada', unidades: '28 comprimidos' },
+  })
+
   // Tomas: los días pasados, casi todo «Tomada» (una se le olvidó). Hoy, lo que ya tocaba, salvo la metformina.
   const ahora = new Date()
   const horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
@@ -833,6 +853,11 @@ async function crearLucia(dia: (n: number) => FechaISO, ano: number): Promise<st
     paraQue: 'La fiebre de la gripe',
     fechaInicio: dia(-2),
     activo: 1,
+  })
+
+  await fotosDeMedicinas(id, {
+    Sumatriptán: { franja: '#c2185b', color: '#f6c6d6', forma: 'redonda', unidades: '4 comprimidos' },
+    Paracetamol: { franja: '#1565c0', color: '#ffffff', forma: 'alargada', ranura: true, unidades: '40 comprimidos' },
   })
 
   // Lo que fue probando para la migraña hasta dar con el sumatriptán, y lo de cada primavera.

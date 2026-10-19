@@ -92,6 +92,8 @@ export interface Medicamento extends RegistroBase {
   efectos?: string
   /** Por qué lo dejó. */
   motivoFin?: MotivoFinMedicamento
+  /** Foto de la pastilla o de la caja, para reconocerla. */
+  foto?: Blob
 }
 
 export type ValoracionMedicamento = 'bien' | 'regular' | 'mal'

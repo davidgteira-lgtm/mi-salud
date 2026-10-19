@@ -1,10 +1,13 @@
 import { pideNuevo, tomarArchivo } from '../componentes/archivoEntrante'
 import { esHora, HORA_DE_MOMENTO, horasDe } from '../utils/tomas'
 import { TomaDeAhora } from '../componentes/TomaDeAhora'
+import { FotoMedicina, LADO_FOTO_MEDICINA } from '../componentes/FotoMedicina'
+import { reducirFoto } from '../utils/imagen'
+import { urlDeArchivo } from '../utils/urlDeArchivo'
 import { EditorAdjuntos, VerAdjuntos } from '../componentes/Adjuntos'
 import { guardarAdjuntos, type AdjuntoNuevo } from '../db/adjuntos'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Confirmar } from '../componentes/Confirmar'
 import { Selector } from '../componentes/Selector'
 import { listarAlergias } from '../db/alergias'
@@ -140,8 +143,14 @@ function TarjetaMedicamento(props: {
   const valoracion = infoValoracion(m.valoracion)
   return (
     <article className={props.avisos.length > 0 ? 'tarjeta pila tarjeta-alerta' : 'tarjeta pila'} style={{ gap: 8 }}>
-      <strong style={{ fontSize: '1.3rem' }}>{m.nombre}</strong>
-      {m.dosis && <span>{m.dosis}</span>}
+      {/* A la izquierda, la foto de la pastilla o de la caja, para reconocerla. */}
+      <div className="medicina-cabecera">
+        <FotoMedicina medicamento={m} />
+        <div className="pila" style={{ gap: 4 }}>
+          <strong style={{ fontSize: '1.3rem' }}>{m.nombre}</strong>
+          {m.dosis && <span>{m.dosis}</span>}
+        </div>
+      </div>
       {(horasDe(m).length > 0 || m.otroHorario) && (
         <div className="etiquetas">
           {horasDe(m).map((h) => (
@@ -230,6 +239,7 @@ function FormularioMedicamento(props: {
   const [loTomaAhora, setLoTomaAhora] = useState<'si' | 'no'>(m && !m.activo ? 'no' : 'si')
   const [fechaFin, setFechaFin] = useState(m?.fechaFin ?? '')
   const [notas, setNotas] = useState(m?.notas ?? '')
+  const [foto, setFoto] = useState<Blob | undefined>(m?.foto)
   const [valoracion, setValoracion] = useState<ValoracionMedicamento | ''>(m?.valoracion ?? '')
   const [efectos, setEfectos] = useState(m?.efectos ?? '')
   const [motivoFin, setMotivoFin] = useState<MotivoFinMedicamento | ''>(m?.motivoFin ?? '')
@@ -260,6 +270,7 @@ function FormularioMedicamento(props: {
       valoracion: valoracion || undefined,
       efectos,
       motivoFin: motivoFin || undefined,
+      foto,
     }
   }
 
@@ -321,6 +332,8 @@ function FormularioMedicamento(props: {
           )}
         </div>
       )}
+
+      <ElegirFoto foto={foto} onCambio={setFoto} />
 
       <label className="campo">
         <span>¿Cuánto tomas?</span>
@@ -623,5 +636,48 @@ function DialogoDejar({ medicamento, onTerminar }: { medicamento: Medicamento; o
         />
       </div>
     </Confirmar>
+  )
+}
+
+/** En el formulario: la foto de la pastilla o de la caja (hacerla, cambiarla o quitarla). */
+function ElegirFoto({ foto, onCambio }: { foto?: Blob; onCambio: (f?: Blob) => void }) {
+  const selector = useRef<HTMLInputElement>(null)
+  const url = urlDeArchivo(foto)
+  return (
+    <fieldset className="campo" style={{ border: 0, padding: 0, margin: 0 }}>
+      <span>Foto de la pastilla o de la caja</span>
+      <small>Así la reconoces de un vistazo. Puedes hacerla con la cámara o elegirla de la galería.</small>
+      <div className="medicina-cabecera">
+        {url ? (
+          <img src={url} alt="Foto de la medicina" className="foto-medicina-mini" width={84} height={84} />
+        ) : (
+          <span className="foto-medicina foto-medicina-vacia" aria-hidden="true">
+            <span>💊</span>
+          </span>
+        )}
+        <div className="pila" style={{ gap: 6, flex: 1 }}>
+          <button type="button" className="boton boton-secundario" onClick={() => selector.current?.click()}>
+            📷 {url ? 'Cambiar foto' : 'Añadir foto'}
+          </button>
+          {url && (
+            <button type="button" className="enlace" onClick={() => onCambio(undefined)}>
+              Quitar la foto
+            </button>
+          )}
+        </div>
+      </div>
+      <input
+        ref={selector}
+        type="file"
+        accept="image/*"
+        hidden
+        aria-label="Foto de la pastilla o de la caja"
+        onChange={async (e) => {
+          const archivo = e.target.files?.[0]
+          e.target.value = ''
+          if (archivo) onCambio(await reducirFoto(archivo, LADO_FOTO_MEDICINA, 0.85))
+        }}
+      />
+    </fieldset>
   )
 }
