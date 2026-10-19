@@ -2,6 +2,8 @@
 // del móvil, a través de Dexie (una librería que hace IndexedDB más fácil de usar).
 // Todo se queda en el móvil: nada se envía a ningún sitio.
 import Dexie, { type Table } from 'dexie'
+import { PRUEBAS } from '../datos/pruebasLaboratorio'
+import { corregirSentido } from '../utils/analisis'
 import type {
   Adjunto,
   Alergia,
@@ -82,6 +84,22 @@ export class BaseDeDatos extends Dexie {
     this.version(6).stores({
       tomas: 'id, perfilId, medicamentoId, [medicamentoId+fecha+hora]',
     })
+    // v7: corrige el sentido de las referencias ya guardadas (p. ej. HDL «inferior a 35» = riesgo, no lo normal).
+    this.version(7)
+      .stores({})
+      .upgrade((tx) =>
+        tx
+          .table<Analitica>('analiticas')
+          .toCollection()
+          .modify((a) => {
+            a.resultados = a.resultados.map((r) => {
+              if (!r.clave || (r.refMin === undefined && r.refMax === undefined)) return r
+              const prueba = PRUEBAS.find((x) => x.clave === r.clave)
+              const c = corregirSentido({ min: r.refMin, max: r.refMax }, prueba)
+              return c ? { ...r, refMin: c.min, refMax: c.max } : r
+            })
+          }),
+      )
   }
 }
 

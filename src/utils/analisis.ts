@@ -58,6 +58,22 @@ export function referenciaOrientativa(p: PruebaLab, sexo?: Sexo): Referencia | u
   return undefined
 }
 
+/**
+ * Comprueba el sentido de un rango de un solo lado con lo que se sabe de la prueba.
+ * El HDL, por ejemplo, es «cuanto más, mejor»: si un informe pone «inferior a 35» (porque por debajo hay riesgo),
+ * lo normal es tener 35 o más, nunca menos. Así no se marca como bueno un valor que es de riesgo.
+ */
+export function corregirSentido(ref: Referencia | null | undefined, p: PruebaLab | undefined): Referencia | null | undefined {
+  if (!ref || !p) return ref
+  const habitual = p.ref ?? p.refHombre ?? p.refMujer
+  if (!habitual) return ref
+  const masEsMejor = habitual.min !== undefined && habitual.max === undefined
+  const menosEsMejor = habitual.max !== undefined && habitual.min === undefined
+  if (masEsMejor && ref.max !== undefined && ref.min === undefined) return { min: ref.max }
+  if (menosEsMejor && ref.min !== undefined && ref.max === undefined) return { max: ref.min }
+  return ref
+}
+
 // ---- Unidades ----------------------------------------------------------------
 
 /**
@@ -264,11 +280,14 @@ function leerFila(nombre: string, res: string, resto: string): FilaLeida | null 
   const esPalabra = /^[a-záéíóúñ]+\.?$/i.test(unidad) && !/^(u|ui|fl|pg|mg|g|kg|l|ml|ug|meq)$/i.test(unidad)
   if (/^(inf|sup)\.?$/i.test(unidad) || esPalabra) unidad = ''
   let referencia = ref ? leerRango(ref) : leerRango(r.replace(unidad, ''))
-  // "(Sup. 5.0) Cifra de riesgo": aquí "Sup." no es lo normal, es a partir de dónde hay riesgo.
-  if (referencia && /riesgo/i.test(r) && referencia.min !== undefined && referencia.max === undefined) {
-    referencia = { max: referencia.min }
+  // "(Sup. 5.0) Cifra de riesgo" o "(Inf. 35) Riesgo elevado": el límite no es lo normal,
+  // es a partir de dónde hay riesgo. Se le da la vuelta (salvo si habla de riesgo bajo).
+  if (referencia && /riesgo/i.test(r) && !/riesgo\s+(bajo|m[ií]nimo|reducido|normal)/i.test(r)) {
+    if (referencia.min !== undefined && referencia.max === undefined) referencia = { max: referencia.min }
+    else if (referencia.max !== undefined && referencia.min === undefined) referencia = { min: referencia.max }
   }
   const prueba = buscarPrueba(nombre, unidad)
+  referencia = corregirSentido(referencia, prueba) ?? null
   // Solo se aceptan líneas con referencia o con una prueba conocida (así no se cuelan fechas o números de póliza).
   if (!referencia && !prueba) return null
   return { nombre, resultado, unidad, referencia, prueba }

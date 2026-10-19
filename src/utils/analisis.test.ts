@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { PRUEBAS } from '../datos/pruebasLaboratorio'
 import {
   buscarPrueba,
+  corregirSentido,
   estadoResultado,
   factorAUnidadHabitual,
   leerInforme,
@@ -263,5 +264,42 @@ describe('"Sup." en los índices de riesgo', () => {
     const { filas } = leerInforme('HDL Colesterol 35 mg/dl (Sup. 40) *')
     expect(filas[0].referencia).toEqual({ min: 40 })
     expect(estadoResultado(35, undefined, filas[0].referencia ?? undefined)).toBe('bajo')
+  })
+})
+
+describe('el HDL y otras pruebas de «cuanto más, mejor» (datos inventados)', () => {
+  const hdl = (linea: string) => {
+    const f = leerInforme(linea).filas[0]
+    return { ref: f.referencia, estado: estadoResultado(f.resultado.valor, f.resultado.comparador, f.referencia ?? undefined) }
+  }
+
+  it('«(Inf. 35) Riesgo elevado»: por debajo de 35 es riesgo, no lo normal', () => {
+    expect(hdl('HDL Colesterol 31 mg/dl (Inf. 35) Riesgo elevado')).toEqual({ ref: { min: 35 }, estado: 'bajo' })
+  })
+
+  it('aunque el informe no diga «riesgo», un HDL nunca es «normal por debajo de»', () => {
+    expect(hdl('Colesterol HDL 31 mg/dl (Inf. 35)')).toEqual({ ref: { min: 35 }, estado: 'bajo' })
+    expect(hdl('HDL 31 mg/dl <35')).toEqual({ ref: { min: 35 }, estado: 'bajo' })
+    expect(hdl('HDL Colesterol 52 mg/dl (Inf. 35) Riesgo elevado').estado).toBe('normal')
+  })
+
+  it('no toca lo que ya estaba bien', () => {
+    expect(hdl('HDL Colesterol 33 mg/dl (Sup. 40)')).toEqual({ ref: { min: 40 }, estado: 'bajo' })
+    expect(hdl('HDL Colesterol 65 mg/dl (Sup. 60) Riesgo bajo').ref).toEqual({ min: 60 })
+    expect(hdl('Triglicéridos 97 mg/dl (Inf. 150)').ref).toEqual({ max: 150 })
+    expect(hdl('Indice COL. total / HDL-COL 4.3 (Sup. 5.0) Cifra de riesgo').ref).toEqual({ max: 5 })
+  })
+
+  it('en una prueba que la app no conoce, «riesgo» también da la vuelta al límite', () => {
+    expect(hdl('Prueba inventada 10 u/l (Inf. 20) Riesgo elevado').ref).toEqual({ min: 20 })
+  })
+
+  it('corrige el sentido con lo que se sabe de la prueba', () => {
+    const p = PRUEBAS.find((x) => x.clave === 'hdl')
+    expect(corregirSentido({ max: 35 }, p)).toEqual({ min: 35 })
+    expect(corregirSentido({ min: 40 }, p)).toEqual({ min: 40 })
+    expect(corregirSentido({ min: 35, max: 80 }, p)).toEqual({ min: 35, max: 80 })
+    const ldl = PRUEBAS.find((x) => x.clave === 'ldl')
+    expect(corregirSentido({ min: 130 }, ldl)).toEqual({ max: 130 })
   })
 })
