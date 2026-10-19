@@ -33,7 +33,7 @@ export default defineConfig({
       },
       workbox: {
         // Guarda en el móvil todo lo necesario para funcionar sin conexión.
-        globPatterns: ['**/*.{js,mjs,css,html,svg,png,jpg,jpeg,webp,ico}'],
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,jpg,jpeg,webp,ico,m4a}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
