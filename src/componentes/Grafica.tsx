@@ -209,8 +209,10 @@ export function Grafica(props: {
             width={ANCHO - M.izquierda - M.derecha + 20}
             height={ALTO}
             fill="transparent"
-            onPointerMove={elegirPorPosicion}
-            onPointerDown={elegirPorPosicion}
+            // Con ratón, el globo sigue al puntero. Con el dedo, un toque lo abre y el siguiente lo cierra
+            // (en cualquier punto de la gráfica, también sobre el propio globo), para que no tape la gráfica.
+            onPointerMove={(e) => e.pointerType === 'mouse' && elegirPorPosicion(e)}
+            onPointerDown={(e) => (e.pointerType !== 'mouse' && activo !== null ? setActivo(null) : elegirPorPosicion(e))}
             onPointerLeave={(e) => e.pointerType === 'mouse' && setActivo(null)}
           />
         </svg>

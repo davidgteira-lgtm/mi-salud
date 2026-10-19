@@ -199,7 +199,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 }
 
 /* ---- Cabecera de inicio ---- */
-.cabecera { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.cabecera { display: flex; align-items: center; gap: 10px 14px; margin-bottom: 18px; flex-wrap: wrap; }
 .cabecera a { text-decoration: none; }
 .cabecera h1 { margin: 0; font-size: 1.5rem; }
 .cabecera .boton { width: auto; min-height: 56px; margin-left: auto; padding: 8px 14px; font-size: 0.9rem; }
@@ -402,7 +402,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 .nivel-urgente { background: #d03b3b; color: #fff; }
 
 /* ---- Fichas de constantes ---- */
-.fichas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* De dos en dos; si con letra grande o pantalla estrecha no caben, una debajo de otra. */
+.fichas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(6.5em, calc(50% - 5px))), 1fr)); gap: 10px; }
 .ficha {
   display: flex;
   flex-direction: column;
@@ -484,7 +485,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 /* Una medida en la lista: valores y "Cambiar" arriba; valoración y fecha debajo. */
 .medida { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
 .medida:last-child { border-bottom: none; }
-.medida-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* Si con letra grande no cabe el botón «Cambiar» al lado del valor, baja a la línea de abajo. */
+.medida-linea { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; }
 .medida-linea-2 { justify-content: flex-start; flex-wrap: wrap; gap: 4px 10px; }
 .medida-valores { white-space: nowrap; font-size: clamp(0.9rem, 4.2vw, 1.05rem); }
 .medida-valores strong { font-size: clamp(1.05rem, 5vw, 1.25rem); }
@@ -613,7 +615,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--principal); outl
 /* ---------- Mis datos y ficha de emergencia ---------- */
 .dato { display: flex; flex-direction: column; gap: 2px; }
 .dato strong { font-size: 1.15rem; }
-.contacto-familia { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.contacto-familia { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
 .contacto-familia .boton { flex: none; width: auto; padding: 0 18px; }
 .opciones-grupo { grid-template-columns: repeat(4, 1fr); }
 .casilla { display: flex; align-items: center; gap: 12px; min-height: 48px; font-size: 1.1rem; }
@@ -859,3 +861,9 @@ details > summary { cursor: pointer; min-height: 44px; display: flex; align-item
 .foto-medicina-grande { width: 100%; max-height: 38dvh; object-fit: contain; border-radius: 14px; background: #fff; }
 .foto-medicina-mini { flex: none; border-radius: 10px; object-fit: cover; border: 2px solid var(--borde); background: #fff; }
 .toma-cabecera { display: flex; gap: 12px; align-items: center; }
+
+/* ---------- Pantallas estrechas y letra grande: nada debe salirse por la derecha ---------- */
+body { overflow-wrap: break-word; }
+.cabecera h1 { flex: 1 1 8em; min-width: 0; }
+.toma-cabecera > .toma-texto, .medicina-cabecera > .pila { min-width: 0; overflow-wrap: anywhere; }
+.pasos-ia a { overflow-wrap: anywhere; }
