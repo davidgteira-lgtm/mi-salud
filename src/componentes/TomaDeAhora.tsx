@@ -6,7 +6,7 @@ import { buscarToma, desmarcarTomada, marcarTomada } from '../db/tomas'
 import type { Medicamento } from '../db/tipos'
 import { cuandoEs, horasDe, siguienteToma, tomaActual } from '../utils/tomas'
 import { Confirmar } from './Confirmar'
-import { MiniaturaMedicina } from './FotoMedicina'
+import { FotoMedicina } from './FotoMedicina'
 
 const horaCorta = (ms: number) => {
   const d = new Date(ms)
@@ -26,8 +26,8 @@ export function TomaDeAhora({ medicamento: m, conNombre = false }: { medicamento
   return (
     <div className={tomada ? 'toma toma-hecha' : 'toma'}>
       <span className="toma-cabecera">
-        {/* En las alertas, la foto de la pastilla ayuda a saber cuál hay que tomar. */}
-        {conNombre && <MiniaturaMedicina foto={m.foto} />}
+        {/* En las alertas, la foto de la pastilla (la misma que en Medicación) ayuda a saber cuál hay que tomar. */}
+        {conNombre && <FotoMedicina medicamento={m} />}
         <span className="toma-texto">
           {conNombre && <strong>{m.nombre}</strong>}
           {conNombre && m.dosis && <span className="texto-suave"> · {m.dosis}</span>}
